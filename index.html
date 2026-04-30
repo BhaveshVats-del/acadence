@@ -3,366 +3,225 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Acadence OS | The Personalized Student Engine</title>
-    
-    <!-- Frameworks -->
+    <title>Acadence | Your Student OS</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.min.js"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
     
-    <!-- Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=Playfair+Display:ital,wght@1,500&family=JetBrains+Mono&display=swap" rel="stylesheet">
-
     <style>
-        [x-cloak] { display: none !important; }
-        :root { --accent: #a78bfa; --bg: #000000; }
-        body { background-color: var(--bg); color: #ffffff; font-family: 'Inter', sans-serif; overflow: hidden; }
-        
-        .glass { background: rgba(255, 255, 255, 0.02); backdrop-filter: blur(25px); border: 1px solid rgba(255, 255, 255, 0.08); }
-        .sidebar-item.active { color: var(--accent); background: rgba(167, 139, 250, 0.1); border-right: 2px solid var(--accent); }
-        
-        /* Custom Scrollbar for Kanban */
-        .kanban-scroll::-webkit-scrollbar { height: 6px; }
-        .kanban-scroll::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.1); border-radius: 10px; }
-        
-        @keyframes fade-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        .animate-in { animation: fade-in 0.6s ease-out forwards; }
-
-        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 10px; }
+        body { font-family: 'Inter', sans-serif; background-color: #050505; color: white; }
+        .glass { background: rgba(255, 255, 255, 0.03); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.1); }
+        .accent-glow { box-shadow: 0 0 20px rgba(59, 130, 246, 0.2); }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-thumb { background: #333; border-radius: 10px; }
+        .gradient-text { background: linear-gradient(to right, #fff, #9ca3af); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
     </style>
 </head>
 <body x-data="acadenceOS()" x-init="init()">
 
-    <!-- 1. PREMIUM ONBOARDING WIZARD -->
-    <template x-if="!onboarded">
-        <div class="fixed inset-0 z-[200] bg-black flex items-center justify-center p-6">
-            <div class="max-w-xl w-full glass p-12 rounded-[3rem] animate-in">
-                <div class="flex justify-between items-center mb-12">
-                    <span class="text-[10px] font-bold tracking-[0.4em] text-purple-400 uppercase">Step <span x-text="step"></span> of 4</span>
-                    <div class="flex gap-2">
-                        <template x-for="i in 4">
-                            <div :class="step >= i ? 'bg-purple-500' : 'bg-white/10'" class="w-8 h-1 rounded-full transition-all"></div>
-                        </template>
-                    </div>
+    <!-- 1. LANDING PAGE -->
+    <template x-if="view === 'landing'">
+        <div class="min-h-screen relative overflow-hidden flex flex-col items-center justify-center px-4">
+            <div class="absolute top-0 left-1/2 -translate-x-1/2 w-full h-[500px] bg-blue-600/10 blur-[120px] -z-10"></div>
+            
+            <nav class="absolute top-0 w-full flex justify-between items-center p-8 max-w-7xl">
+                <div class="text-2xl font-bold tracking-tighter flex items-center gap-2">
+                    <div class="w-8 h-8 bg-blue-600 rounded-lg"></div> ACADENCE
                 </div>
+                <button @click="view = 'onboarding'" class="glass px-6 py-2 rounded-full hover:bg-white/10 transition">Launch OS</button>
+            </nav>
 
-                <!-- Step 1: Identity -->
-                <div x-show="step === 1">
-                    <h2 class="text-4xl font-serif italic mb-2">Welcome to Acadence</h2>
-                    <p class="text-gray-500 text-sm mb-8">Let's build your personalized academic identity.</p>
-                    <input x-model="user.name" type="text" placeholder="Full Name" class="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 outline-none focus:border-purple-500 mb-4 text-white">
-                    <input x-model="user.school" type="text" placeholder="School Name" class="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 outline-none focus:border-purple-500 text-white">
-                </div>
-
-                <!-- Step 2: Curriculum -->
-                <div x-show="step === 2">
-                    <h2 class="text-4xl font-serif italic mb-2">Your Academics</h2>
-                    <p class="text-gray-500 text-sm mb-8">What are we conquering this term?</p>
-                    <div class="grid grid-cols-2 gap-4">
-                        <select x-model="user.grade" class="bg-white/5 border border-white/10 rounded-2xl px-6 py-4 outline-none text-white">
-                            <option value="" class="bg-black">Select Grade</option>
-                            <option class="bg-black">Class 9</option><option class="bg-black">Class 10</option>
-                            <option class="bg-black">Class 11</option><option class="bg-black">Class 12</option>
-                        </select>
-                        <select x-model="user.board" class="bg-white/5 border border-white/10 rounded-2xl px-6 py-4 outline-none text-white">
-                            <option value="" class="bg-black">Curriculum</option>
-                            <option class="bg-black">CBSE</option><option class="bg-black">ICSE</option>
-                            <option class="bg-black">IB</option><option class="bg-black">IGCSE</option>
-                        </select>
-                    </div>
-                </div>
-
-                <!-- Step 3: Rhythms -->
-                <div x-show="step === 3">
-                    <h2 class="text-4xl font-serif italic mb-2">Daily Rhythms</h2>
-                    <p class="text-gray-500 text-sm mb-8">Map your school and tuition slots.</p>
-                    <div class="space-y-4">
-                        <div class="flex items-center justify-between glass p-4 rounded-2xl">
-                            <span class="text-xs text-gray-400">School Hours</span>
-                            <div class="flex gap-2">
-                                <input x-model="user.schoolStart" type="time" class="bg-transparent text-xs text-white">
-                                <span class="text-gray-600">to</span>
-                                <input x-model="user.schoolEnd" type="time" class="bg-transparent text-xs text-white">
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Step 4: Finalization -->
-                <div x-show="step === 4">
-                    <h2 class="text-4xl font-serif italic mb-2">Final Polish</h2>
-                    <p class="text-gray-500 text-sm mb-8">Choose your primary theme and focus style.</p>
-                    <div class="flex gap-4">
-                        <button @click="user.theme = 'oled'" :class="user.theme === 'oled' ? 'border-purple-500' : 'border-white/10'" class="flex-1 p-6 glass rounded-3xl text-center border">
-                            <div class="w-8 h-8 bg-black border border-white/20 rounded-full mx-auto mb-2"></div>
-                            <span class="text-[10px] uppercase font-bold">OLED</span>
-                        </button>
-                        <button @click="user.theme = 'midnight'" :class="user.theme === 'midnight' ? 'border-purple-500' : 'border-white/10'" class="flex-1 p-6 glass rounded-3xl text-center border">
-                            <div class="w-8 h-8 bg-slate-900 border border-white/20 rounded-full mx-auto mb-2"></div>
-                            <span class="text-[10px] uppercase font-bold">Midnight</span>
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Navigation -->
-                <div class="flex justify-between mt-12 pt-8 border-t border-white/5">
-                    <button x-show="step > 1" @click="step--" class="text-gray-500 text-xs font-bold uppercase tracking-widest">Back</button>
-                    <span x-show="step === 1"></span>
-                    <button @click="step === 4 ? completeOnboarding() : step++" class="bg-white text-black px-10 py-4 rounded-full font-bold text-[10px] uppercase tracking-widest hover:bg-purple-400 transition-all">
-                        <span x-text="step === 4 ? 'Enter OS' : 'Continue'"></span>
+            <div class="text-center max-w-4xl">
+                <span class="px-4 py-1 rounded-full border border-blue-500/30 bg-blue-500/10 text-blue-400 text-sm mb-6 inline-block">The All-in-One Student Workspace</span>
+                <h1 class="text-6xl md:text-8xl font-bold tracking-tight mb-8 gradient-text">Master School, Studies, and Life.</h1>
+                <p class="text-gray-400 text-xl mb-10 max-w-2xl mx-auto">The ultimate productivity platform built exclusively for students. Experience world-class academic management.</p>
+                
+                <div class="flex flex-col md:flex-row gap-4 justify-center">
+                    <button @click="view = 'onboarding'" class="bg-blue-600 hover:bg-blue-700 text-white px-10 py-4 rounded-2xl text-lg font-semibold transition accent-glow">
+                        Get Started Free
+                    </button>
+                    <button class="glass px-10 py-4 rounded-2xl text-lg font-semibold hover:bg-white/5 transition">
+                        View Demo
                     </button>
                 </div>
             </div>
         </div>
     </template>
 
-    <!-- 2. MAIN SYSTEM INTERFACE -->
-    <div x-show="onboarded" x-cloak class="flex h-screen overflow-hidden">
-        <aside class="w-64 border-r border-white/5 bg-black/40 flex flex-col p-6">
-            <h1 class="text-2xl font-serif italic mb-12 px-2">Acadence</h1>
-            <nav class="space-y-2 flex-1">
-                <button @click="activeTab = 'dashboard'" :class="activeTab === 'dashboard' ? 'sidebar-item active' : 'sidebar-item'" class="w-full flex items-center gap-4 px-4 py-3 rounded-xl text-gray-500 hover:text-white transition-all">
-                    <i data-lucide="layout-dashboard" class="w-4 h-4"></i>
-                    <span class="text-sm font-medium">Dashboard</span>
-                </button>
-                <button @click="activeTab = 'subjects'" :class="activeTab === 'subjects' ? 'sidebar-item active' : 'sidebar-item'" class="w-full flex items-center gap-4 px-4 py-3 rounded-xl text-gray-500 hover:text-white transition-all">
-                    <i data-lucide="book" class="w-4 h-4"></i>
-                    <span class="text-sm font-medium">Academic Hub</span>
-                </button>
-                <button @click="activeTab = 'timetable'" :class="activeTab === 'timetable' ? 'sidebar-item active' : 'sidebar-item'" class="w-full flex items-center gap-4 px-4 py-3 rounded-xl text-gray-500 hover:text-white transition-all">
-                    <i data-lucide="calendar" class="w-4 h-4"></i>
-                    <span class="text-sm font-medium">Auto-Timetable</span>
-                </button>
-            </nav>
-
-            <div class="glass p-4 rounded-2xl mt-auto">
-                <div class="flex items-center gap-3">
-                    <div class="w-10 h-10 rounded-full bg-purple-500/20 border border-purple-500/30 flex items-center justify-center text-purple-400 font-bold" x-text="user.name ? user.name[0] : 'U'"></div>
-                    <div class="overflow-hidden">
-                        <p class="text-xs font-bold truncate" x-text="user.name"></p>
-                        <p class="text-[9px] text-gray-500 uppercase tracking-widest" x-text="user.grade"></p>
-                    </div>
-                </div>
-            </div>
-        </aside>
-
-        <main class="flex-1 overflow-y-auto bg-[radial-gradient(circle_at_top_right,rgba(167,139,250,0.03),transparent)]">
-            <header class="px-12 py-8 flex justify-between items-center sticky top-0 bg-black/60 backdrop-blur-md z-50">
-                <div class="flex items-center gap-6">
-                    <h2 class="text-2xl font-serif italic" x-text="getTabTitle()"></h2>
-                    <div class="h-4 w-[1px] bg-white/10"></div>
-                    <div class="flex items-center gap-2 px-3 py-1 bg-orange-500/10 border border-orange-500/20 rounded-full">
-                        <i data-lucide="flame" class="w-3 h-3 text-orange-500 fill-orange-500"></i>
-                        <span class="text-[9px] font-bold text-orange-500 tracking-tighter" x-text="streak + ' DAY STREAK'"></span>
-                    </div>
+    <!-- 2. ONBOARDING FLOW -->
+    <template x-if="view === 'onboarding'">
+        <div class="min-h-screen flex items-center justify-center p-6 bg-[#080808]">
+            <div class="glass max-w-xl w-full p-10 rounded-[2rem] space-y-8">
+                <div class="flex justify-between items-center">
+                    <h2 class="text-2xl font-bold">Setup Your Identity</h2>
+                    <span class="text-blue-500 font-mono">Step 1/3</span>
                 </div>
                 
-                <div class="flex items-center gap-4">
-                    <span class="text-xs font-mono text-gray-500" x-text="currentTime"></span>
-                    <button @click="showSubjectModal = true; activeTab = 'subjects'" class="bg-white text-black p-2 rounded-full hover:bg-purple-400 transition-all">
-                        <i data-lucide="plus" class="w-4 h-4"></i>
-                    </button>
+                <div class="space-y-4">
+                    <div>
+                        <label class="text-sm text-gray-400">Full Name</label>
+                        <input x-model="user.name" type="text" class="w-full bg-white/5 border border-white/10 rounded-xl p-4 mt-1 focus:border-blue-500 outline-none transition" placeholder="Alex Sterling">
+                    </div>
+                    <div>
+                        <label class="text-sm text-gray-400">Current Grade / Class</label>
+                        <input x-model="user.grade" type="text" class="w-full bg-white/5 border border-white/10 rounded-xl p-4 mt-1 focus:border-blue-500 outline-none transition" placeholder="Sophomore Year">
+                    </div>
                 </div>
-            </header>
 
-            <div class="px-12 pb-20">
-                <!-- TAB: KANBAN -->
-                <div x-show="activeTab === 'subjects'" class="animate-in">
-                    <div class="flex gap-8 overflow-x-auto pb-8 kanban-scroll" style="min-height: 70vh;">
-                        <template x-for="(subject, index) in subjects" :key="index">
-                            <div class="flex-shrink-0 w-80 glass rounded-[2.5rem] p-6 flex flex-col gap-6 group hover:border-purple-500/30 transition-all">
-                                <div class="flex justify-between items-start">
-                                    <div class="flex items-center gap-3">
-                                        <div class="w-3 h-10 rounded-full" :style="'background-color:' + subject.color"></div>
-                                        <div>
-                                            <h4 class="text-xl font-light" x-text="subject.name"></h4>
-                                            <p class="text-[9px] text-gray-500 uppercase tracking-widest" x-text="subject.tasks.length + ' Tasks'"></p>
-                                        </div>
+                <button @click="completeOnboarding()" class="w-full bg-white text-black py-4 rounded-xl font-bold hover:bg-gray-200 transition">
+                    Enter Acadence
+                </button>
+            </div>
+        </div>
+    </template>
+
+    <!-- 3. MAIN DASHBOARD (The Operating System) -->
+    <template x-if="view === 'dashboard'">
+        <div class="flex h-screen overflow-hidden">
+            <!-- Sidebar -->
+            <aside class="w-64 glass border-r border-white/5 flex flex-col p-6">
+                <div class="text-xl font-bold mb-10 flex items-center gap-2">
+                    <div class="w-6 h-6 bg-blue-600 rounded"></div> ACADENCE
+                </div>
+                
+                <nav class="flex-1 space-y-2">
+                    <button class="w-full text-left p-3 rounded-xl bg-white/5 flex items-center gap-3"><i data-lucide="layout-dashboard" class="w-5 h-5"></i> Dashboard</button>
+                    <button class="w-full text-left p-3 rounded-xl hover:bg-white/5 flex items-center gap-3 text-gray-400"><i data-lucide="book-open" class="w-5 h-5"></i> Subjects</button>
+                    <button class="w-full text-left p-3 rounded-xl hover:bg-white/5 flex items-center gap-3 text-gray-400"><i data-lucide="calendar" class="w-5 h-5"></i> Timetable</button>
+                    <button class="w-full text-left p-3 rounded-xl hover:bg-white/5 flex items-center gap-3 text-gray-400"><i data-lucide="award" class="w-5 h-5"></i> Gamification</button>
+                </nav>
+
+                <div class="mt-auto glass p-4 rounded-2xl bg-blue-600/10 border-blue-500/20">
+                    <div class="flex items-center justify-between text-xs mb-2">
+                        <span class="text-blue-400 font-bold">LEVEL <span x-text="user.level"></span></span>
+                        <span x-text="user.xp + '/1000 XP'"></span>
+                    </div>
+                    <div class="w-full bg-white/10 h-1.5 rounded-full overflow-hidden">
+                        <div class="bg-blue-500 h-full transition-all duration-500" :style="`width: ${(user.xp / 1000) * 100}%`"></div>
+                    </div>
+                </div>
+            </aside>
+
+            <!-- Main Content Area -->
+            <main class="flex-1 overflow-y-auto p-10 bg-[#020202]">
+                <header class="flex justify-between items-end mb-12">
+                    <div>
+                        <h2 class="text-4xl font-bold mb-2">Welcome, <span x-text="user.name"></span></h2>
+                        <p class="text-gray-500">Here's your academic summary for today.</p>
+                    </div>
+                    <div class="flex gap-4">
+                        <div class="glass px-4 py-2 rounded-xl flex items-center gap-2">
+                            <span class="text-orange-500">🔥</span> <span class="font-bold">7 Day Streak</span>
+                        </div>
+                    </div>
+                </header>
+
+                <!-- Grid Widgets -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <!-- Quick Actions -->
+                    <div class="glass p-6 rounded-[2rem] col-span-2">
+                        <h3 class="text-lg font-semibold mb-6 flex items-center gap-2">
+                            <i data-lucide="zap" class="w-5 h-5 text-yellow-400"></i> Smart Tasks
+                        </h3>
+                        <div class="space-y-3">
+                            <template x-for="task in tasks" :key="task.id">
+                                <div class="flex items-center justify-between p-4 bg-white/5 rounded-2xl border border-white/5 hover:border-white/10 transition cursor-pointer group" @click="completeTask(task.id)">
+                                    <div class="flex items-center gap-4">
+                                        <div class="w-6 h-6 rounded-full border-2 border-white/20 group-hover:border-blue-500 transition"></div>
+                                        <span x-text="task.title"></span>
                                     </div>
-                                    <button @click="deleteSubject(index)" class="opacity-0 group-hover:opacity-100 p-2 hover:text-rose-500 transition-all"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                                    <span class="text-xs px-3 py-1 rounded-full bg-blue-500/10 text-blue-400" x-text="task.tag"></span>
                                 </div>
+                            </template>
+                        </div>
+                    </div>
 
-                                <div class="space-y-3 flex-1 overflow-y-auto pr-2 custom-scrollbar">
-                                    <template x-for="(task, tIndex) in subject.tasks" :key="tIndex">
-                                        <div class="glass p-4 rounded-2xl hover:bg-white/[0.04] transition-all cursor-pointer">
-                                            <div class="flex justify-between items-start mb-2">
-                                                <span class="text-[9px] px-2 py-0.5 rounded-full border border-white/10 uppercase" x-text="task.type"></span>
-                                                <input type="checkbox" x-model="task.done" @change="save()" class="rounded-full bg-transparent border-white/20">
-                                            </div>
-                                            <p class="text-xs font-medium" :class="task.done ? 'line-through text-gray-600' : ''" x-text="task.title"></p>
-                                        </div>
+                    <!-- Wellness Tracker -->
+                    <div class="glass p-6 rounded-[2rem]">
+                        <h3 class="text-lg font-semibold mb-6">Wellness Center</h3>
+                        <div class="space-y-6">
+                            <div>
+                                <div class="flex justify-between text-sm mb-2">
+                                    <span>Hydration</span>
+                                    <span x-text="wellness.water + ' / 8 Glasses'"></span>
+                                </div>
+                                <div class="grid grid-cols-8 gap-2">
+                                    <template x-for="i in 8">
+                                        <button @click="wellness.water = i" :class="wellness.water >= i ? 'bg-blue-500' : 'bg-white/10'" class="h-2 rounded-full transition"></button>
                                     </template>
-                                    
-                                    <button @click="addTask(index)" class="w-full py-4 border border-dashed border-white/10 rounded-2xl text-[10px] uppercase font-bold text-gray-600 hover:border-purple-500/30 hover:text-purple-400 transition-all">
-                                        + Add Mission
-                                    </button>
                                 </div>
                             </div>
-                        </template>
-
-                        <!-- INITIALIZE SUBJECT BUTTON -->
-                        <button @click="showSubjectModal = true" class="flex-shrink-0 w-80 border-2 border-dashed border-white/5 rounded-[2.5rem] flex flex-col items-center justify-center text-gray-700 hover:text-purple-400 hover:border-purple-500/30 transition-all group" style="min-height: 400px;">
-                            <i data-lucide="folder-plus" class="w-10 h-10 mb-4 group-hover:scale-110 transition-transform"></i>
-                            <span class="text-[10px] font-bold uppercase tracking-[0.4em]">Initialize Subject</span>
-                        </button>
-                    </div>
-                </div>
-
-                <!-- TAB: DASHBOARD -->
-                <div x-show="activeTab === 'dashboard'" class="animate-in space-y-12">
-                    <div class="grid grid-cols-12 gap-8">
-                        <div class="col-span-8 glass p-10 rounded-[3rem] relative overflow-hidden group">
-                            <div class="absolute top-0 right-0 w-64 h-64 bg-purple-600/5 blur-[100px] rounded-full"></div>
-                            <h3 class="text-5xl font-serif italic mb-8">Ready to evolve, <span x-text="user.name ? user.name.split(' ')[0] : 'Student'"></span>?</h3>
-                            <div class="grid grid-cols-3 gap-8 pt-8 border-t border-white/5">
-                                <div><p class="text-[10px] text-gray-500 uppercase tracking-widest mb-2">Tasks Found</p><p class="text-3xl font-light" x-text="subjects.reduce((acc, s) => acc + s.tasks.length, 0)"></p></div>
-                                <div><p class="text-[10px] text-gray-500 uppercase tracking-widest mb-2">Subjects</p><p class="text-3xl font-light" x-text="subjects.length"></p></div>
-                                <div><p class="text-[10px] text-gray-500 uppercase tracking-widest mb-2">XP Rank</p><p class="text-3xl font-light text-purple-400">Elite IV</p></div>
+                            <div class="p-4 bg-white/5 rounded-2xl">
+                                <p class="text-xs text-gray-500 mb-1">Current Focus</p>
+                                <p class="font-bold">Pomodoro Session</p>
+                                <button class="mt-3 w-full py-2 bg-blue-600 rounded-lg text-sm font-bold">Start Timer</button>
                             </div>
                         </div>
-                        <div class="col-span-4 glass p-10 rounded-[3rem] text-center flex flex-col justify-center">
-                            <i data-lucide="timer" class="w-8 h-8 mx-auto mb-4 text-purple-400"></i>
-                            <p class="text-4xl font-mono mb-4">25:00</p>
-                            <button class="bg-white text-black px-6 py-2 rounded-full text-[10px] font-bold uppercase tracking-widest">Start Focus</button>
-                        </div>
-                    </div>
-
-                    <div class="grid grid-cols-3 gap-8">
-                        <div class="glass p-8 rounded-[2rem]">
-                            <h5 class="text-xs font-bold uppercase tracking-widest mb-6">Subject Distribution</h5>
-                            <canvas id="studyChart"></canvas>
-                        </div>
                     </div>
                 </div>
-            </div>
-        </main>
-    </div>
 
-    <!-- MODAL: ADD SUBJECT -->
-    <template x-if="showSubjectModal">
-        <div class="fixed inset-0 z-[300] bg-black/80 backdrop-blur-sm flex items-center justify-center p-6">
-            <div class="max-w-md w-full glass p-10 rounded-[3rem] animate-in" @click.away="showSubjectModal = false">
-                <h3 class="text-2xl font-serif italic mb-8">Initialize Subject</h3>
-                <input x-model="newSubject.name" type="text" placeholder="Subject Name (e.g. Physics)" class="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 outline-none focus:border-purple-500 mb-6 text-white">
-                <div class="flex gap-3 mb-8">
-                    <template x-for="color in ['#a78bfa', '#f87171', '#4ade80', '#60a5fa', '#fbbf24', '#f472b6']">
-                        <button @click="newSubject.color = color" :class="newSubject.color === color ? 'scale-125 border-white' : 'border-transparent'" class="w-8 h-8 rounded-full border-2 transition-all" :style="'background-color:' + color"></button>
-                    </template>
+                <!-- AI Insight Banner -->
+                <div class="mt-10 p-6 rounded-[2rem] bg-gradient-to-r from-blue-600/20 to-purple-600/20 border border-blue-500/20 flex items-center gap-6">
+                    <div class="w-14 h-14 rounded-2xl bg-white/10 flex items-center justify-center text-2xl">🧠</div>
+                    <div>
+                        <h4 class="font-bold">Offline AI Insight</h4>
+                        <p class="text-gray-400 text-sm">Based on your upcoming Physics test, I recommend a 45-minute active recall session tonight.</p>
+                    </div>
                 </div>
-                <div class="flex gap-4">
-                    <button @click="showSubjectModal = false" class="flex-1 py-4 text-gray-500 text-[10px] font-bold uppercase tracking-widest">Cancel</button>
-                    <button @click="createSubject()" class="flex-1 py-4 bg-white text-black rounded-2xl text-[10px] font-bold uppercase tracking-widest hover:bg-purple-400">Deploy</button>
-                </div>
-            </div>
+            </main>
         </div>
     </template>
 
     <script>
         function acadenceOS() {
             return {
-                onboarded: false,
-                step: 1,
-                activeTab: 'dashboard',
-                streak: 12,
-                currentTime: '',
-                showSubjectModal: false,
-                user: { name: '', school: '', grade: '', board: '', schoolStart: '08:00', schoolEnd: '14:30', theme: 'oled' },
-                newSubject: { name: '', color: '#a78bfa' },
-                subjects: [],
-
+                view: 'landing', // 'landing', 'onboarding', 'dashboard'
+                user: {
+                    name: '',
+                    grade: '',
+                    xp: 250,
+                    level: 1
+                },
+                wellness: {
+                    water: 3,
+                    mood: 'Great'
+                },
+                tasks: [
+                    { id: 1, title: 'Math Homework: Calculus Ch. 4', tag: 'Academic' },
+                    { id: 2, title: 'Submit Debate Research', tag: 'Extracurricular' },
+                    { id: 3, title: 'English Essay Draft', tag: 'Academic' }
+                ],
                 init() {
-                    const savedData = localStorage.getItem('acadence_v3_data');
+                    const savedData = localStorage.getItem('acadence_data');
                     if (savedData) {
                         const parsed = JSON.parse(savedData);
-                        this.user = parsed.user || this.user;
-                        this.subjects = parsed.subjects || [];
-                        this.onboarded = true;
+                        this.user = parsed.user;
+                        this.view = 'dashboard';
+                        setTimeout(() => lucide.createIcons(), 100);
                     }
-
-                    this.updateTime();
-                    setInterval(() => this.updateTime(), 1000);
-                    
-                    this.$watch('activeTab', (val) => {
-                        this.$nextTick(() => {
-                            lucide.createIcons();
-                            if(val === 'dashboard') this.initCharts();
-                        });
-                    });
-
-                    this.$nextTick(() => {
-                        lucide.createIcons();
-                        if(this.onboarded && this.activeTab === 'dashboard') this.initCharts();
-                    });
+                    lucide.createIcons();
                 },
-
-                updateTime() {
-                    this.currentTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-                },
-
                 completeOnboarding() {
-                    if (!this.user.name) return alert("Please enter your name.");
-                    this.onboarded = true;
+                    if (this.user.name.trim() === '') return alert('Please enter your name');
+                    this.view = 'dashboard';
                     this.save();
-                    this.$nextTick(() => lucide.createIcons());
+                    setTimeout(() => lucide.createIcons(), 100);
                 },
-
-                createSubject() {
-                    if (!this.newSubject.name) return;
-                    this.subjects.push({ name: this.newSubject.name, color: this.newSubject.color, tasks: [] });
-                    this.newSubject = { name: '', color: '#a78bfa' };
-                    this.showSubjectModal = false;
+                completeTask(id) {
+                    this.tasks = this.tasks.filter(t => t.id !== id);
+                    this.user.xp += 100;
+                    if (this.user.xp >= 1000) {
+                        this.user.level++;
+                        this.user.xp = 0;
+                    }
                     this.save();
-                    this.$nextTick(() => lucide.createIcons());
                 },
-
-                deleteSubject(index) {
-                    if (confirm("Delete this subject?")) {
-                        this.subjects.splice(index, 1);
-                        this.save();
-                    }
-                },
-
-                addTask(subIndex) {
-                    const title = prompt("Task Objective:");
-                    if (title) {
-                        this.subjects[subIndex].tasks.push({ title, type: 'mission', done: false });
-                        this.save();
-                    }
-                },
-
                 save() {
-                    localStorage.setItem('acadence_v3_data', JSON.stringify({ user: this.user, subjects: this.subjects }));
-                },
-
-                getTabTitle() {
-                    return this.activeTab === 'subjects' ? 'Academic Hub' : this.activeTab.charAt(0).toUpperCase() + this.activeTab.slice(1);
-                },
-
-                initCharts() {
-                    const ctx = document.getElementById('studyChart');
-                    if (!ctx) return;
-                    if (window.myChart) window.myChart.destroy();
-                    
-                    const hasData = this.subjects.length > 0;
-
-                    window.myChart = new Chart(ctx, {
-                        type: 'doughnut',
-                        data: {
-                            labels: hasData ? this.subjects.map(s => s.name) : ['No Data'],
-                            datasets: [{
-                                data: hasData ? this.subjects.map(s => s.tasks.length + 1) : [1],
-                                backgroundColor: hasData ? this.subjects.map(s => s.color) : ['rgba(255,255,255,0.05)'],
-                                borderWidth: 0,
-                                borderRadius: 10
-                            }]
-                        },
-                        options: {
-                            plugins: { legend: { display: false } },
-                            cutout: '80%'
-                        }
-                    });
+                    localStorage.setItem('acadence_data', JSON.stringify({
+                        user: this.user,
+                        wellness: this.wellness
+                    }));
                 }
             }
         }
