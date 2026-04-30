@@ -3,179 +3,254 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Acadence | Mission Control</title>
+    <title>Acadence | The Student OS</title>
+    
+    <!-- CSS & Fonts -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=Playfair+Display:ital,wght@1,500&display=swap" rel="stylesheet">
+    <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=Playfair+Display:ital,wght@1,500&family=JetBrains+Mono&display=swap" rel="stylesheet">
+
     <style>
+        [x-cloak] { display: none !important; }
         :root { --accent: #a78bfa; }
         body { background-color: #000000; color: #ffffff; font-family: 'Inter', sans-serif; height: 100vh; overflow: hidden; }
-        .glass { background: rgba(255, 255, 255, 0.02); backdrop-filter: blur(25px); border: 1px solid rgba(255, 255, 255, 0.05); }
-        .glow-purple { box-shadow: 0 0 40px -10px rgba(167, 139, 250, 0.2); }
-        .input-premium { background: transparent; border-bottom: 1px solid rgba(255, 255, 255, 0.1); outline: none; transition: 0.4s; }
-        .input-premium:focus { border-color: var(--accent); }
-        .attendance-btn { background: linear-gradient(135deg, #1e1e1e, #0a0a0a); border: 1px solid rgba(255,255,255,0.1); }
-        .attendance-btn:active { transform: scale(0.95); }
-        .hidden-section { display: none; }
-        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
-        .ticker-pulse { animation: pulse 2s infinite; }
+        
+        .glass { background: rgba(255, 255, 255, 0.02); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.05); }
+        .premium-border { border-color: rgba(167, 139, 250, 0.2); }
+        
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.1); border-radius: 10px; }
+
+        .shimmer {
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.05), transparent);
+            background-size: 200% 100%;
+            animation: shimmer 3s infinite;
+        }
+        @keyframes shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
+        
+        .glow-text { text-shadow: 0 0 20px rgba(167, 139, 250, 0.5); }
+        .nav-item.active { color: var(--accent); background: rgba(167, 139, 250, 0.1); }
     </style>
 </head>
-<body class="flex items-center justify-center p-4">
+<body x-data="acadenceOS()">
 
-    <!-- OVERLAY: ATTENDANCE GATEKEEPER -->
-    <div id="attendance-gate" class="fixed inset-0 z-50 bg-[#000000] flex flex-col items-center justify-center transition-all duration-700">
-        <div class="text-center">
-            <p class="text-xs uppercase tracking-[0.6em] text-gray-500 mb-4">Identity Verification</p>
-            <h2 class="text-5xl font-serif italic mb-12">Good Morning, Scholar.</h2>
-            <button onclick="markAttendance()" class="attendance-btn group px-12 py-12 rounded-full relative overflow-hidden">
-                <div class="absolute inset-0 bg-purple-500/10 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                <i data-lucide="fingerprint" class="w-12 h-12 text-purple-400"></i>
-            </button>
-            <p class="mt-8 text-gray-400 text-xs tracking-widest">TAP TO MARK ATTENDANCE & START STREAK</p>
+    <!-- 1. ATTENDANCE GATEKEEPER -->
+    <template x-if="!authorized">
+        <div class="fixed inset-0 z-[100] bg-black flex flex-col items-center justify-center transition-all duration-1000">
+            <div class="text-center">
+                <h1 class="text-5xl font-serif italic mb-2">Acadence</h1>
+                <p class="text-[10px] uppercase tracking-[0.5em] text-gray-500 mb-16">Syncing Student Identity...</p>
+                
+                <button @click="markAttendance()" class="group relative p-14 rounded-full glass hover:premium-border transition-all active:scale-95">
+                    <div class="absolute inset-0 bg-purple-500/10 blur-3xl opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                    <i data-lucide="fingerprint" class="w-12 h-12 text-purple-400"></i>
+                </button>
+                <p class="mt-8 text-gray-600 text-[10px] uppercase tracking-widest animate-pulse">Tap to authenticate & start streak</p>
+            </div>
         </div>
-    </div>
+    </template>
 
-    <!-- MAIN DASHBOARD -->
-    <div id="dashboard" class="w-full max-w-6xl h-[90vh] glass rounded-[3rem] overflow-hidden flex flex-col opacity-0 transition-opacity duration-1000">
+    <!-- 2. MAIN OPERATING SYSTEM -->
+    <div x-show="authorized" x-cloak class="flex h-screen opacity-0 transition-opacity duration-1000" :class="authorized ? 'opacity-100' : ''">
         
-        <!-- Header: The Countdown Ticker -->
-        <div class="p-8 border-b border-white/5 flex justify-between items-center bg-white/[0.01]">
-            <div class="flex items-center gap-6">
-                <h1 class="text-2xl font-serif italic italic">Acadence</h1>
-                <div class="h-4 w-[1px] bg-white/10"></div>
-                <div class="flex items-center gap-3">
-                    <span class="w-2 h-2 rounded-full bg-orange-500 shadow-[0_0_10px_#f97316]"></span>
-                    <span class="text-[10px] font-bold tracking-widest text-gray-400">STREAK: <span id="streak-count">14</span> DAYS</span>
-                </div>
+        <!-- SIDEBAR NAVIGATION -->
+        <aside class="w-20 border-r border-white/5 flex flex-col items-center py-8 gap-8 bg-black/50">
+            <div class="mb-4 font-serif italic text-2xl cursor-default">A</div>
+            <nav class="flex flex-col gap-4">
+                <button @click="view = 'dashboard'" :class="view === 'dashboard' ? 'nav-item active' : 'nav-item'" class="p-3 rounded-2xl text-gray-500 hover:text-white transition-all"><i data-lucide="zap" class="w-5 h-5"></i></button>
+                <button @click="view = 'academic'" :class="view === 'academic' ? 'nav-item active' : 'nav-item'" class="p-3 rounded-2xl text-gray-500 hover:text-white transition-all"><i data-lucide="book-open" class="w-5 h-5"></i></button>
+                <button @click="view = 'extra'" :class="view === 'extra' ? 'nav-item active' : 'nav-item'" class="p-3 rounded-2xl text-gray-500 hover:text-white transition-all"><i data-lucide="trophy" class="w-5 h-5"></i></button>
+                <button @click="view = 'analytics'" :class="view === 'analytics' ? 'nav-item active' : 'nav-item'" class="p-3 rounded-2xl text-gray-500 hover:text-white transition-all"><i data-lucide="bar-chart-3" class="w-5 h-5"></i></button>
+                <button @click="view = 'wellness'" :class="view === 'wellness' ? 'nav-item active' : 'nav-item'" class="p-3 rounded-2xl text-gray-500 hover:text-white transition-all"><i data-lucide="heart" class="w-5 h-5"></i></button>
+            </nav>
+            <div class="mt-auto">
+                <button @click="view = 'ai'" :class="view === 'ai' ? 'nav-item active' : 'nav-item'" class="p-3 rounded-2xl text-gray-500 hover:text-white transition-all"><i data-lucide="message-square" class="w-5 h-5"></i></button>
             </div>
+        </aside>
 
-            <div class="text-right">
-                <p class="text-[9px] uppercase tracking-[0.3em] text-purple-400 font-bold mb-1">Time to First Examination</p>
-                <div id="countdown-ticker" class="text-2xl font-mono tracking-tighter text-white">00D : 00H : 00M : 00S</div>
-            </div>
-        </div>
-
-        <div class="flex flex-1 overflow-hidden">
-            <!-- Sidebar: Navigation -->
-            <aside class="w-20 border-r border-white/5 flex flex-col items-center py-10 gap-8">
-                <i data-lucide="layout-grid" class="w-5 h-5 text-purple-400 cursor-pointer"></i>
-                <i data-lucide="book" class="w-5 h-5 text-gray-500 hover:text-white cursor-pointer"></i>
-                <i data-lucide="award" class="w-5 h-5 text-gray-500 hover:text-white cursor-pointer"></i>
-                <div class="mt-auto">
-                    <i data-lucide="settings" class="w-5 h-5 text-gray-700"></i>
+        <!-- VIEWPORT -->
+        <main class="flex-1 overflow-y-auto relative bg-[radial-gradient(circle_at_top_right,rgba(167,139,250,0.05),transparent)]">
+            
+            <!-- HEADER -->
+            <header class="px-12 py-8 flex justify-between items-center sticky top-0 bg-black/80 backdrop-blur-md z-10">
+                <div>
+                    <h2 class="text-xs uppercase tracking-[0.4em] text-gray-500 font-bold mb-1" x-text="getGreeting()"></h2>
+                    <h3 class="text-2xl font-serif italic" x-text="viewTitle()"></h3>
                 </div>
-            </aside>
+                
+                <div class="flex items-center gap-6">
+                    <div class="flex items-center gap-2 px-4 py-1.5 rounded-full bg-orange-500/10 border border-orange-500/20">
+                        <i data-lucide="zap" class="w-3 h-3 text-orange-500 fill-orange-500"></i>
+                        <span class="text-[10px] font-bold text-orange-500 tracking-tighter" x-text="streak + ' DAY STREAK'"></span>
+                    </div>
+                    <div class="text-right">
+                        <p class="text-[9px] uppercase tracking-widest text-purple-400 font-bold">Exam Countdown</p>
+                        <p class="font-mono text-lg tracking-tighter shimmer-text" x-text="countdown"></p>
+                    </div>
+                </div>
+            </header>
 
-            <!-- Main Scroll Area -->
-            <main class="flex-1 overflow-y-auto p-12">
-                <div id="setup-phase" class="">
-                    <h3 class="text-4xl font-light mb-2">Initialize your <span class="text-purple-400">Plan.</span></h3>
-                    <p class="text-gray-500 mb-12 text-sm font-light">Input your subjects and exam date to shard your syllabus.</p>
-                    
-                    <div class="grid grid-cols-2 gap-12">
-                        <div class="space-y-8">
-                            <div>
-                                <label class="text-[10px] uppercase tracking-widest text-gray-500 block mb-4">Exam Commencement</label>
-                                <input type="date" id="exam-date" class="input-premium w-full py-2 text-white">
+            <!-- CONTENT SECTIONS -->
+            <div class="px-12 pb-20 max-w-7xl mx-auto space-y-12 mt-4">
+
+                <!-- DASHBOARD VIEW -->
+                <template x-if="view === 'dashboard'">
+                    <div class="grid grid-cols-12 gap-8">
+                        <!-- Primary Task Shard -->
+                        <div class="col-span-8 glass p-10 rounded-[3rem] relative overflow-hidden group">
+                            <div class="absolute top-0 right-0 w-80 h-80 bg-purple-600/5 blur-[100px] rounded-full group-hover:bg-purple-600/10 transition-all duration-1000"></div>
+                            <p class="text-[10px] font-bold text-purple-400 uppercase tracking-[0.3em] mb-4">Current Focus Session</p>
+                            <h4 class="text-4xl font-light mb-8">Physics: Quantum Mechanics <span class="text-lg font-serif italic text-gray-500">Revision Phase</span></h4>
+                            
+                            <div class="flex gap-12 border-t border-white/5 pt-8">
+                                <div><p class="text-[9px] text-gray-600 uppercase mb-1">Time Allocated</p><p class="text-xl">120m</p></div>
+                                <div><p class="text-[9px] text-gray-600 uppercase mb-1">Subtopics</p><p class="text-xl">04</p></div>
+                                <div><p class="text-[9px] text-gray-600 uppercase mb-1">Intensity</p><p class="text-xl text-orange-400">High</p></div>
                             </div>
-                            <div>
-                                <label class="text-[10px] uppercase tracking-widest text-gray-500 block mb-4">Subjects & Topics (Separated by commas)</label>
-                                <textarea id="subjects-data" placeholder="Physics (Optics, Nuclei), Math (Calculus, Vectors)..." class="input-premium w-full h-32 py-2 text-sm resize-none"></textarea>
-                            </div>
-                            <button onclick="buildMasterSchedule()" class="bg-white text-black px-8 py-4 rounded-full text-[10px] font-bold uppercase tracking-[0.2em] hover:bg-purple-400 transition-colors">Generate Syllabus Shards</button>
                         </div>
 
-                        <div class="glass rounded-[2rem] p-8 flex items-center justify-center border-dashed border-white/10">
-                            <p class="text-gray-600 text-xs italic">Intelligence Preview Window</p>
+                        <!-- Waitlist / Subscription Card -->
+                        <div class="col-span-4 glass p-8 rounded-[3rem] border-purple-500/20 bg-purple-500/[0.02] flex flex-col">
+                            <h5 class="text-lg font-medium mb-2">Upgrade to Pro</h5>
+                            <p class="text-xs text-gray-500 mb-6">Unlock College Portfolio Builder & Advanced AI Sharding.</p>
+                            <input type="email" placeholder="Join waitlist..." class="bg-black/40 border border-white/5 rounded-xl px-4 py-3 text-xs mb-4 focus:border-purple-400 outline-none transition-all">
+                            <button class="w-full py-4 bg-white text-black rounded-xl text-[10px] font-bold uppercase tracking-widest hover:bg-purple-400 transition-all mt-auto">Join 2,400+ Students</button>
+                        </div>
+
+                        <!-- Mini Modules -->
+                        <div class="col-span-12 grid grid-cols-4 gap-6">
+                            <div class="glass p-6 rounded-3xl hover:bg-white/[0.04] transition-all cursor-pointer">
+                                <i data-lucide="list-todo" class="w-5 h-5 text-blue-400 mb-4"></i>
+                                <h6 class="text-sm font-medium">Homework</h6>
+                                <p class="text-[10px] text-gray-500 mt-1">4 Pending Tasks</p>
+                            </div>
+                            <div class="glass p-6 rounded-3xl hover:bg-white/[0.04] transition-all cursor-pointer">
+                                <i data-lucide="trophy" class="w-5 h-5 text-amber-400 mb-4"></i>
+                                <h6 class="text-sm font-medium">Competition</h6>
+                                <p class="text-[10px] text-gray-500 mt-1">Hackathon in 2d</p>
+                            </div>
+                            <div class="glass p-6 rounded-3xl hover:bg-white/[0.04] transition-all cursor-pointer">
+                                <i data-lucide="droplets" class="w-5 h-5 text-cyan-400 mb-4"></i>
+                                <h6 class="text-sm font-medium">Hydration</h6>
+                                <p class="text-[10px] text-gray-500 mt-1">85% of Goal</p>
+                            </div>
+                            <div class="glass p-6 rounded-3xl hover:bg-white/[0.04] transition-all cursor-pointer">
+                                <i data-lucide="moon" class="w-5 h-5 text-indigo-400 mb-4"></i>
+                                <h6 class="text-sm font-medium">Sleep Path</h6>
+                                <p class="text-[10px] text-gray-500 mt-1">Optimal: 7.5h</p>
+                            </div>
                         </div>
                     </div>
-                </div>
+                </template>
 
-                <!-- TABLE VIEW (Hidden until generated) -->
-                <div id="schedule-phase" class="hidden-section">
-                    <div class="flex justify-between items-end mb-10">
-                        <h3 class="text-3xl font-light italic font-serif">Daily Combat Schedule</h3>
-                        <p class="text-[10px] text-gray-500">OPTIMIZED FOR MAXIMUM RETENTION</p>
+                <!-- ACADEMIC VIEW (Syllabus Sharder) -->
+                <template x-if="view === 'academic'">
+                    <div class="space-y-8 animate-in">
+                        <div class="glass p-10 rounded-[3rem]">
+                            <h4 class="text-2xl font-light mb-8">Syllabus Sharding <span class="text-xs text-purple-400 font-bold uppercase ml-2">AI Engine</span></h4>
+                            <div class="grid grid-cols-2 gap-12">
+                                <div class="space-y-6">
+                                    <div>
+                                        <label class="text-[9px] uppercase tracking-widest text-gray-500 mb-2 block">Set Exam Commencement</label>
+                                        <input type="date" class="w-full bg-transparent border-b border-white/10 py-2 focus:border-purple-400 outline-none text-sm">
+                                    </div>
+                                    <div>
+                                        <label class="text-[9px] uppercase tracking-widest text-gray-500 mb-2 block">Input Subject & Topics</label>
+                                        <textarea placeholder="e.g. Math (Calculus, Trig), Science (Physics)..." class="w-full bg-transparent border border-white/10 rounded-2xl p-4 h-32 focus:border-purple-400 outline-none text-sm resize-none"></textarea>
+                                    </div>
+                                    <button class="bg-white text-black px-8 py-3 rounded-full text-[10px] font-bold uppercase tracking-widest hover:bg-purple-400 transition-all">Generate Combat Plan</button>
+                                </div>
+                                <div class="border border-dashed border-white/10 rounded-[2rem] flex flex-col items-center justify-center p-8 text-center">
+                                    <i data-lucide="cpu" class="w-10 h-10 text-gray-700 mb-4"></i>
+                                    <p class="text-xs text-gray-600 italic">Enter details to shard syllabus into daily 45-minute sessions.</p>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                    <div id="schedule-grid" class="grid grid-cols-1 gap-4">
-                        <!-- Dynamic schedule injected here -->
+                </template>
+
+                <!-- ANALYTICS VIEW -->
+                <template x-if="view === 'analytics'">
+                    <div class="grid grid-cols-3 gap-8">
+                        <div class="glass p-8 rounded-[2rem] col-span-2">
+                            <h4 class="text-sm font-bold uppercase tracking-widest mb-8">Productivity Heatmap</h4>
+                            <div class="h-48 flex items-end gap-2 px-4">
+                                <template x-for="i in 14">
+                                    <div class="flex-1 bg-purple-500/20 rounded-t-lg hover:bg-purple-400 transition-all" :style="'height:' + (Math.random() * 100) + '%'"></div>
+                                </template>
+                            </div>
+                        </div>
+                        <div class="glass p-8 rounded-[2rem] flex flex-col justify-center text-center">
+                            <p class="text-[10px] text-gray-500 uppercase tracking-widest mb-2">Weekly Focus Score</p>
+                            <h5 class="text-6xl font-light">94%</h5>
+                            <p class="text-[10px] text-green-400 font-bold mt-4 uppercase">↑ 12% from last week</p>
+                        </div>
                     </div>
-                </div>
-            </main>
-        </div>
+                </template>
+
+            </div>
+        </main>
     </div>
 
     <script>
-        lucide.createIcons();
+        function acadenceOS() {
+            return {
+                authorized: false,
+                view: 'dashboard',
+                streak: 14,
+                countdown: '00D : 00H : 00M : 00S',
+                
+                init() {
+                    lucide.createIcons();
+                    this.startCountdown();
+                },
 
-        // 1. Attendance Logic
-        function markAttendance() {
-            const gate = document.getElementById('attendance-gate');
-            const dashboard = document.getElementById('dashboard');
-            
-            gate.style.opacity = '0';
-            gate.style.pointerEvents = 'none';
-            dashboard.style.opacity = '1';
-            
-            // Logic for a real app: localStorage.setItem('lastAttendance', new Date().toDateString());
-        }
+                markAttendance() {
+                    this.authorized = true;
+                    this.streak++;
+                    // Re-init icons for the new view
+                    setTimeout(() => lucide.createIcons(), 100);
+                },
 
-        // 2. Countdown Logic
-        function startCountdown(targetDate) {
-            const ticker = document.getElementById('countdown-ticker');
-            
-            setInterval(() => {
-                const now = new Date().getTime();
-                const distance = new Date(targetDate).getTime() - now;
+                getGreeting() {
+                    const hrs = new Date().getHours();
+                    if (hrs < 12) return "Identity Confirmed • Morning, Scholar";
+                    if (hrs < 18) return "Identity Confirmed • Afternoon, Scholar";
+                    return "Identity Confirmed • Evening, Scholar";
+                },
 
-                const days = Math.floor(distance / (1000 * 60 * 60 * 24));
-                const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-                const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
-                const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+                viewTitle() {
+                    const titles = {
+                        dashboard: "Mission Control",
+                        academic: "Academic Vault",
+                        extra: "Extracurricular Hub",
+                        analytics: "Productivity Intelligence",
+                        wellness: "Biological Balance",
+                        ai: "Neural Assistant"
+                    };
+                    return titles[this.view];
+                },
 
-                ticker.innerHTML = `${days}D : ${hours}H : ${minutes}M : ${seconds}S`;
-            }, 1000);
-        }
+                startCountdown() {
+                    const target = new Date();
+                    target.setDate(target.getDate() + 14); // Mock target 14 days away
 
-        // 3. Schedule Builder
-        function buildMasterSchedule() {
-            const dateInput = document.getElementById('exam-date').value;
-            const subInput = document.getElementById('subjects-data').value;
-            
-            if(!dateInput || !subInput) return alert("Please initialize all fields.");
+                    setInterval(() => {
+                        const now = new Date().getTime();
+                        const diff = target.getTime() - now;
 
-            startCountdown(dateInput);
-            
-            document.getElementById('setup-phase').classList.add('hidden-section');
-            const scheduleView = document.getElementById('schedule-phase');
-            scheduleView.classList.remove('hidden-section');
+                        const d = Math.floor(diff / (1000 * 60 * 60 * 24));
+                        const h = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                        const m = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+                        const s = Math.floor((diff % (1000 * 60)) / 1000);
 
-            const grid = document.getElementById('schedule-grid');
-            const subjects = subInput.split(',');
-
-            const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
-            let html = '';
-
-            days.forEach((day, index) => {
-                const subject = subjects[index % subjects.length].trim();
-                html += `
-                    <div class="glass p-6 rounded-3xl flex items-center justify-between hover:bg-white/[0.03] transition-all">
-                        <div class="flex items-center gap-8">
-                            <div class="text-xs font-bold text-purple-400 w-24 uppercase tracking-widest">${day}</div>
-                            <div>
-                                <p class="text-lg font-light text-white">${subject}</p>
-                                <p class="text-[10px] text-gray-500 uppercase tracking-widest mt-1">Focus Slot: 04:00 PM — 06:30 PM</p>
-                            </div>
-                        </div>
-                        <div class="flex items-center gap-4">
-                            <span class="px-3 py-1 rounded-full border border-white/10 text-[9px] text-gray-400">ACTIVE RECALL</span>
-                            <div class="w-2 h-2 rounded-full bg-green-500"></div>
-                        </div>
-                    </div>
-                `;
-            });
-            grid.innerHTML = html;
+                        this.countdown = `${d}D : ${h}H : ${m}M : ${s}S`;
+                    }, 1000);
+                }
+            }
         }
     </script>
 </body>
