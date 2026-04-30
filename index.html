@@ -3,252 +3,429 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Acadence | The Student OS</title>
+    <title>Acadence OS | The Personalized Student Engine</title>
     
-    <!-- CSS & Fonts -->
+    <!-- Frameworks -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <!-- Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=Playfair+Display:ital,wght@1,500&family=JetBrains+Mono&display=swap" rel="stylesheet">
 
     <style>
         [x-cloak] { display: none !important; }
-        :root { --accent: #a78bfa; }
-        body { background-color: #000000; color: #ffffff; font-family: 'Inter', sans-serif; height: 100vh; overflow: hidden; }
+        :root { --accent: #a78bfa; --bg: #000000; }
+        body { background-color: var(--bg); color: #ffffff; font-family: 'Inter', sans-serif; overflow: hidden; }
         
-        .glass { background: rgba(255, 255, 255, 0.02); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.05); }
-        .premium-border { border-color: rgba(167, 139, 250, 0.2); }
+        .glass { background: rgba(255, 255, 255, 0.02); backdrop-filter: blur(25px); border: 1px solid rgba(255, 255, 255, 0.08); }
+        .sidebar-item.active { color: var(--accent); background: rgba(167, 139, 250, 0.1); border-right: 2px solid var(--accent); }
         
-        /* Custom Scrollbar */
-        ::-webkit-scrollbar { width: 4px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.1); border-radius: 10px; }
-
-        .shimmer {
-            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.05), transparent);
-            background-size: 200% 100%;
-            animation: shimmer 3s infinite;
-        }
-        @keyframes shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
+        /* Custom Scrollbar for Kanban */
+        .kanban-scroll::-webkit-scrollbar { height: 6px; }
+        .kanban-scroll::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.1); border-radius: 10px; }
         
-        .glow-text { text-shadow: 0 0 20px rgba(167, 139, 250, 0.5); }
-        .nav-item.active { color: var(--accent); background: rgba(167, 139, 250, 0.1); }
+        @keyframes fade-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .animate-in { animation: fade-in 0.6s ease-out forwards; }
     </style>
 </head>
 <body x-data="acadenceOS()">
 
-    <!-- 1. ATTENDANCE GATEKEEPER -->
-    <template x-if="!authorized">
-        <div class="fixed inset-0 z-[100] bg-black flex flex-col items-center justify-center transition-all duration-1000">
-            <div class="text-center">
-                <h1 class="text-5xl font-serif italic mb-2">Acadence</h1>
-                <p class="text-[10px] uppercase tracking-[0.5em] text-gray-500 mb-16">Syncing Student Identity...</p>
-                
-                <button @click="markAttendance()" class="group relative p-14 rounded-full glass hover:premium-border transition-all active:scale-95">
-                    <div class="absolute inset-0 bg-purple-500/10 blur-3xl opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                    <i data-lucide="fingerprint" class="w-12 h-12 text-purple-400"></i>
-                </button>
-                <p class="mt-8 text-gray-600 text-[10px] uppercase tracking-widest animate-pulse">Tap to authenticate & start streak</p>
+    <!-- 1. PREMIUM ONBOARDING WIZARD -->
+    <template x-if="!onboarded">
+        <div class="fixed inset-0 z-[200] bg-black flex items-center justify-center p-6">
+            <div class="max-w-xl w-full glass p-12 rounded-[3rem] animate-in">
+                <!-- Progress Header -->
+                <div class="flex justify-between items-center mb-12">
+                    <span class="text-[10px] font-bold tracking-[0.4em] text-purple-400 uppercase">Step <span x-text="step"></span> of 4</span>
+                    <div class="flex gap-2">
+                        <template x-for="i in 4">
+                            <div :class="step >= i ? 'bg-purple-500' : 'bg-white/10'" class="w-8 h-1 rounded-full transition-all"></div>
+                        </template>
+                    </div>
+                </div>
+
+                <!-- Step 1: Identity -->
+                <div x-show="step === 1">
+                    <h2 class="text-4xl font-serif italic mb-2">Welcome to Acadence</h2>
+                    <p class="text-gray-500 text-sm mb-8">Let's build your personalized academic identity.</p>
+                    <input x-model="user.name" type="text" placeholder="Full Name" class="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 outline-none focus:border-purple-500 mb-4">
+                    <input x-model="user.school" type="text" placeholder="School Name" class="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 outline-none focus:border-purple-500">
+                </div>
+
+                <!-- Step 2: Curriculum -->
+                <div x-show="step === 2">
+                    <h2 class="text-4xl font-serif italic mb-2">Your Academics</h2>
+                    <p class="text-gray-500 text-sm mb-8">What are we conquering this term?</p>
+                    <div class="grid grid-cols-2 gap-4">
+                        <select x-model="user.grade" class="bg-white/5 border border-white/10 rounded-2xl px-6 py-4 outline-none">
+                            <option value="">Select Grade</option>
+                            <option>Class 9</option><option>Class 10</option><option>Class 11</option><option>Class 12</option>
+                        </select>
+                        <select x-model="user.board" class="bg-white/5 border border-white/10 rounded-2xl px-6 py-4 outline-none">
+                            <option value="">Curriculum</option>
+                            <option>CBSE</option><option>ICSE</option><option>IB</option><option>IGCSE</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Step 3: Rhythms -->
+                <div x-show="step === 3">
+                    <h2 class="text-4xl font-serif italic mb-2">Daily Rhythms</h2>
+                    <p class="text-gray-500 text-sm mb-8">Map your school and tuition slots.</p>
+                    <div class="space-y-4">
+                        <div class="flex items-center justify-between glass p-4 rounded-2xl">
+                            <span class="text-xs text-gray-400">School Hours</span>
+                            <div class="flex gap-2">
+                                <input x-model="user.schoolStart" type="time" class="bg-transparent text-xs">
+                                <span class="text-gray-600">to</span>
+                                <input x-model="user.schoolEnd" type="time" class="bg-transparent text-xs">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step 4: Finalization -->
+                <div x-show="step === 4">
+                    <h2 class="text-4xl font-serif italic mb-2">Final Polish</h2>
+                    <p class="text-gray-500 text-sm mb-8">Choose your primary theme and focus style.</p>
+                    <div class="flex gap-4">
+                        <button @click="user.theme = 'oled'" :class="user.theme === 'oled' ? 'border-purple-500' : 'border-white/10'" class="flex-1 p-6 glass rounded-3xl text-center border">
+                            <div class="w-8 h-8 bg-black border border-white/20 rounded-full mx-auto mb-2"></div>
+                            <span class="text-[10px] uppercase font-bold">OLED</span>
+                        </button>
+                        <button @click="user.theme = 'midnight'" :class="user.theme === 'midnight' ? 'border-purple-500' : 'border-white/10'" class="flex-1 p-6 glass rounded-3xl text-center border">
+                            <div class="w-8 h-8 bg-slate-900 border border-white/20 rounded-full mx-auto mb-2"></div>
+                            <span class="text-[10px] uppercase font-bold">Midnight</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Navigation Buttons -->
+                <div class="flex justify-between mt-12 pt-8 border-t border-white/5">
+                    <button x-show="step > 1" @click="step--" class="text-gray-500 text-xs font-bold uppercase tracking-widest">Back</button>
+                    <span x-show="step === 1"></span>
+                    <button @click="step === 4 ? completeOnboarding() : step++" class="bg-white text-black px-10 py-4 rounded-full font-bold text-[10px] uppercase tracking-widest hover:bg-purple-400 transition-all">
+                        <span x-text="step === 4 ? 'Enter OS' : 'Continue'"></span>
+                    </button>
+                </div>
             </div>
         </div>
     </template>
 
-    <!-- 2. MAIN OPERATING SYSTEM -->
-    <div x-show="authorized" x-cloak class="flex h-screen opacity-0 transition-opacity duration-1000" :class="authorized ? 'opacity-100' : ''">
+    <!-- 2. MAIN SYSTEM INTERFACE -->
+    <div x-show="onboarded" x-cloak class="flex h-screen overflow-hidden">
         
-        <!-- SIDEBAR NAVIGATION -->
-        <aside class="w-20 border-r border-white/5 flex flex-col items-center py-8 gap-8 bg-black/50">
-            <div class="mb-4 font-serif italic text-2xl cursor-default">A</div>
-            <nav class="flex flex-col gap-4">
-                <button @click="view = 'dashboard'" :class="view === 'dashboard' ? 'nav-item active' : 'nav-item'" class="p-3 rounded-2xl text-gray-500 hover:text-white transition-all"><i data-lucide="zap" class="w-5 h-5"></i></button>
-                <button @click="view = 'academic'" :class="view === 'academic' ? 'nav-item active' : 'nav-item'" class="p-3 rounded-2xl text-gray-500 hover:text-white transition-all"><i data-lucide="book-open" class="w-5 h-5"></i></button>
-                <button @click="view = 'extra'" :class="view === 'extra' ? 'nav-item active' : 'nav-item'" class="p-3 rounded-2xl text-gray-500 hover:text-white transition-all"><i data-lucide="trophy" class="w-5 h-5"></i></button>
-                <button @click="view = 'analytics'" :class="view === 'analytics' ? 'nav-item active' : 'nav-item'" class="p-3 rounded-2xl text-gray-500 hover:text-white transition-all"><i data-lucide="bar-chart-3" class="w-5 h-5"></i></button>
-                <button @click="view = 'wellness'" :class="view === 'wellness' ? 'nav-item active' : 'nav-item'" class="p-3 rounded-2xl text-gray-500 hover:text-white transition-all"><i data-lucide="heart" class="w-5 h-5"></i></button>
+        <!-- SIDEBAR -->
+        <aside class="w-64 border-r border-white/5 bg-black/40 flex flex-col p-6">
+            <h1 class="text-2xl font-serif italic mb-12 px-2">Acadence</h1>
+            
+            <nav class="space-y-2 flex-1">
+                <button @click="activeTab = 'dashboard'" :class="activeTab === 'dashboard' ? 'sidebar-item active' : 'sidebar-item'" class="w-full flex items-center gap-4 px-4 py-3 rounded-xl text-gray-500 hover:text-white transition-all">
+                    <i data-lucide="layout-dashboard" class="w-4 h-4"></i>
+                    <span class="text-sm font-medium">Dashboard</span>
+                </button>
+                <button @click="activeTab = 'subjects'" :class="activeTab === 'subjects' ? 'sidebar-item active' : 'sidebar-item'" class="w-full flex items-center gap-4 px-4 py-3 rounded-xl text-gray-500 hover:text-white transition-all">
+                    <i data-lucide="book" class="w-4 h-4"></i>
+                    <span class="text-sm font-medium">Academic Hub</span>
+                </button>
+                <button @click="activeTab = 'timetable'" :class="activeTab === 'timetable' ? 'sidebar-item active' : 'sidebar-item'" class="w-full flex items-center gap-4 px-4 py-3 rounded-xl text-gray-500 hover:text-white transition-all">
+                    <i data-lucide="calendar" class="w-4 h-4"></i>
+                    <span class="text-sm font-medium">Auto-Timetable</span>
+                </button>
+                <button @click="activeTab = 'extra'" :class="activeTab === 'extra' ? 'sidebar-item active' : 'sidebar-item'" class="w-full flex items-center gap-4 px-4 py-3 rounded-xl text-gray-500 hover:text-white transition-all">
+                    <i data-lucide="activity" class="w-4 h-4"></i>
+                    <span class="text-sm font-medium">Extracurriculars</span>
+                </button>
             </nav>
-            <div class="mt-auto">
-                <button @click="view = 'ai'" :class="view === 'ai' ? 'nav-item active' : 'nav-item'" class="p-3 rounded-2xl text-gray-500 hover:text-white transition-all"><i data-lucide="message-square" class="w-5 h-5"></i></button>
+
+            <!-- Profile Widget -->
+            <div class="glass p-4 rounded-2xl mt-auto">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-full bg-purple-500/20 border border-purple-500/30 flex items-center justify-center text-purple-400 font-bold" x-text="user.name ? user.name[0] : 'U'"></div>
+                    <div>
+                        <p class="text-xs font-bold truncate max-w-[120px]" x-text="user.name"></p>
+                        <p class="text-[9px] text-gray-500 uppercase tracking-widest" x-text="user.grade"></p>
+                    </div>
+                </div>
             </div>
         </aside>
 
-        <!-- VIEWPORT -->
-        <main class="flex-1 overflow-y-auto relative bg-[radial-gradient(circle_at_top_right,rgba(167,139,250,0.05),transparent)]">
+        <!-- MAIN VIEWPORT -->
+        <main class="flex-1 overflow-y-auto bg-[radial-gradient(circle_at_top_right,rgba(167,139,250,0.03),transparent)]">
             
-            <!-- HEADER -->
-            <header class="px-12 py-8 flex justify-between items-center sticky top-0 bg-black/80 backdrop-blur-md z-10">
-                <div>
-                    <h2 class="text-xs uppercase tracking-[0.4em] text-gray-500 font-bold mb-1" x-text="getGreeting()"></h2>
-                    <h3 class="text-2xl font-serif italic" x-text="viewTitle()"></h3>
+            <header class="px-12 py-8 flex justify-between items-center sticky top-0 bg-black/60 backdrop-blur-md z-50">
+                <div class="flex items-center gap-6">
+                    <h2 class="text-2xl font-serif italic" x-text="getTabTitle()"></h2>
+                    <div class="h-4 w-[1px] bg-white/10"></div>
+                    <div class="flex items-center gap-2 px-3 py-1 bg-orange-500/10 border border-orange-500/20 rounded-full">
+                        <i data-lucide="flame" class="w-3 h-3 text-orange-500 fill-orange-500"></i>
+                        <span class="text-[9px] font-bold text-orange-500 tracking-tighter" x-text="streak + ' DAY STREAK'"></span>
+                    </div>
                 </div>
                 
-                <div class="flex items-center gap-6">
-                    <div class="flex items-center gap-2 px-4 py-1.5 rounded-full bg-orange-500/10 border border-orange-500/20">
-                        <i data-lucide="zap" class="w-3 h-3 text-orange-500 fill-orange-500"></i>
-                        <span class="text-[10px] font-bold text-orange-500 tracking-tighter" x-text="streak + ' DAY STREAK'"></span>
-                    </div>
-                    <div class="text-right">
-                        <p class="text-[9px] uppercase tracking-widest text-purple-400 font-bold">Exam Countdown</p>
-                        <p class="font-mono text-lg tracking-tighter shimmer-text" x-text="countdown"></p>
-                    </div>
+                <div class="flex items-center gap-4">
+                    <span class="text-xs font-mono text-gray-500" x-text="currentTime"></span>
+                    <button @click="openSubjectModal()" class="bg-white text-black p-2 rounded-full hover:bg-purple-400 transition-all">
+                        <i data-lucide="plus" class="w-4 h-4"></i>
+                    </button>
                 </div>
             </header>
 
-            <!-- CONTENT SECTIONS -->
-            <div class="px-12 pb-20 max-w-7xl mx-auto space-y-12 mt-4">
+            <div class="px-12 pb-20">
+                
+                <!-- TAB: KANBAN ACADEMIC HUB -->
+                <div x-show="activeTab === 'subjects'" class="animate-in">
+                    <div class="flex gap-8 overflow-x-auto pb-8 kanban-scroll" style="min-height: 70vh;">
+                        <template x-for="(subject, index) in subjects" :key="index">
+                            <div class="flex-shrink-0 w-80 glass rounded-[2.5rem] p-6 flex flex-col gap-6 group hover:border-purple-500/30 transition-all">
+                                <div class="flex justify-between items-start">
+                                    <div class="flex items-center gap-3">
+                                        <div class="w-3 h-10 rounded-full" :style="'background-color:' + subject.color"></div>
+                                        <div>
+                                            <h4 class="text-xl font-light" x-text="subject.name"></h4>
+                                            <p class="text-[9px] text-gray-500 uppercase tracking-widest" x-text="subject.tasks.length + ' Tasks'"></p>
+                                        </div>
+                                    </div>
+                                    <button @click="deleteSubject(index)" class="opacity-0 group-hover:opacity-100 p-2 hover:text-rose-500 transition-all"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                                </div>
 
-                <!-- DASHBOARD VIEW -->
-                <template x-if="view === 'dashboard'">
+                                <div class="space-y-3 flex-1 overflow-y-auto pr-2 custom-scrollbar">
+                                    <template x-for="(task, tIndex) in subject.tasks" :key="tIndex">
+                                        <div class="glass p-4 rounded-2xl hover:bg-white/[0.04] transition-all cursor-pointer">
+                                            <div class="flex justify-between items-start mb-2">
+                                                <span class="text-[9px] px-2 py-0.5 rounded-full border border-white/10 uppercase" x-text="task.type"></span>
+                                                <input type="checkbox" x-model="task.done" class="rounded-full bg-transparent border-white/20">
+                                            </div>
+                                            <p class="text-xs font-medium" :class="task.done ? 'line-through text-gray-600' : ''" x-text="task.title"></p>
+                                        </div>
+                                    </template>
+                                    
+                                    <button @click="addTask(index)" class="w-full py-4 border border-dashed border-white/10 rounded-2xl text-[10px] uppercase font-bold text-gray-600 hover:border-purple-500/30 hover:text-purple-400 transition-all">
+                                        + Add Mission
+                                    </button>
+                                </div>
+                            </div>
+                        </template>
+
+                        <!-- Add Subject Placeholder -->
+                        <button @click="openSubjectModal()" class="flex-shrink-0 w-80 border-2 border-dashed border-white/5 rounded-[2.5rem] flex flex-col items-center justify-center text-gray-700 hover:text-gray-400 hover:border-white/10 transition-all">
+                            <i data-lucide="folder-plus" class="w-10 h-10 mb-4"></i>
+                            <span class="text-[10px] font-bold uppercase tracking-[0.4em]">Initialize Subject</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- TAB: DASHBOARD -->
+                <div x-show="activeTab === 'dashboard'" class="animate-in space-y-12">
                     <div class="grid grid-cols-12 gap-8">
-                        <!-- Primary Task Shard -->
+                        <!-- Main Stats -->
                         <div class="col-span-8 glass p-10 rounded-[3rem] relative overflow-hidden group">
-                            <div class="absolute top-0 right-0 w-80 h-80 bg-purple-600/5 blur-[100px] rounded-full group-hover:bg-purple-600/10 transition-all duration-1000"></div>
-                            <p class="text-[10px] font-bold text-purple-400 uppercase tracking-[0.3em] mb-4">Current Focus Session</p>
-                            <h4 class="text-4xl font-light mb-8">Physics: Quantum Mechanics <span class="text-lg font-serif italic text-gray-500">Revision Phase</span></h4>
+                            <div class="absolute top-0 right-0 w-64 h-64 bg-purple-600/5 blur-[100px] rounded-full"></div>
+                            <h3 class="text-5xl font-serif italic mb-8">Ready to evolve, <span x-text="user.name.split(' ')[0]"></span>?</h3>
                             
-                            <div class="flex gap-12 border-t border-white/5 pt-8">
-                                <div><p class="text-[9px] text-gray-600 uppercase mb-1">Time Allocated</p><p class="text-xl">120m</p></div>
-                                <div><p class="text-[9px] text-gray-600 uppercase mb-1">Subtopics</p><p class="text-xl">04</p></div>
-                                <div><p class="text-[9px] text-gray-600 uppercase mb-1">Intensity</p><p class="text-xl text-orange-400">High</p></div>
-                            </div>
-                        </div>
-
-                        <!-- Waitlist / Subscription Card -->
-                        <div class="col-span-4 glass p-8 rounded-[3rem] border-purple-500/20 bg-purple-500/[0.02] flex flex-col">
-                            <h5 class="text-lg font-medium mb-2">Upgrade to Pro</h5>
-                            <p class="text-xs text-gray-500 mb-6">Unlock College Portfolio Builder & Advanced AI Sharding.</p>
-                            <input type="email" placeholder="Join waitlist..." class="bg-black/40 border border-white/5 rounded-xl px-4 py-3 text-xs mb-4 focus:border-purple-400 outline-none transition-all">
-                            <button class="w-full py-4 bg-white text-black rounded-xl text-[10px] font-bold uppercase tracking-widest hover:bg-purple-400 transition-all mt-auto">Join 2,400+ Students</button>
-                        </div>
-
-                        <!-- Mini Modules -->
-                        <div class="col-span-12 grid grid-cols-4 gap-6">
-                            <div class="glass p-6 rounded-3xl hover:bg-white/[0.04] transition-all cursor-pointer">
-                                <i data-lucide="list-todo" class="w-5 h-5 text-blue-400 mb-4"></i>
-                                <h6 class="text-sm font-medium">Homework</h6>
-                                <p class="text-[10px] text-gray-500 mt-1">4 Pending Tasks</p>
-                            </div>
-                            <div class="glass p-6 rounded-3xl hover:bg-white/[0.04] transition-all cursor-pointer">
-                                <i data-lucide="trophy" class="w-5 h-5 text-amber-400 mb-4"></i>
-                                <h6 class="text-sm font-medium">Competition</h6>
-                                <p class="text-[10px] text-gray-500 mt-1">Hackathon in 2d</p>
-                            </div>
-                            <div class="glass p-6 rounded-3xl hover:bg-white/[0.04] transition-all cursor-pointer">
-                                <i data-lucide="droplets" class="w-5 h-5 text-cyan-400 mb-4"></i>
-                                <h6 class="text-sm font-medium">Hydration</h6>
-                                <p class="text-[10px] text-gray-500 mt-1">85% of Goal</p>
-                            </div>
-                            <div class="glass p-6 rounded-3xl hover:bg-white/[0.04] transition-all cursor-pointer">
-                                <i data-lucide="moon" class="w-5 h-5 text-indigo-400 mb-4"></i>
-                                <h6 class="text-sm font-medium">Sleep Path</h6>
-                                <p class="text-[10px] text-gray-500 mt-1">Optimal: 7.5h</p>
-                            </div>
-                        </div>
-                    </div>
-                </template>
-
-                <!-- ACADEMIC VIEW (Syllabus Sharder) -->
-                <template x-if="view === 'academic'">
-                    <div class="space-y-8 animate-in">
-                        <div class="glass p-10 rounded-[3rem]">
-                            <h4 class="text-2xl font-light mb-8">Syllabus Sharding <span class="text-xs text-purple-400 font-bold uppercase ml-2">AI Engine</span></h4>
-                            <div class="grid grid-cols-2 gap-12">
-                                <div class="space-y-6">
-                                    <div>
-                                        <label class="text-[9px] uppercase tracking-widest text-gray-500 mb-2 block">Set Exam Commencement</label>
-                                        <input type="date" class="w-full bg-transparent border-b border-white/10 py-2 focus:border-purple-400 outline-none text-sm">
-                                    </div>
-                                    <div>
-                                        <label class="text-[9px] uppercase tracking-widest text-gray-500 mb-2 block">Input Subject & Topics</label>
-                                        <textarea placeholder="e.g. Math (Calculus, Trig), Science (Physics)..." class="w-full bg-transparent border border-white/10 rounded-2xl p-4 h-32 focus:border-purple-400 outline-none text-sm resize-none"></textarea>
-                                    </div>
-                                    <button class="bg-white text-black px-8 py-3 rounded-full text-[10px] font-bold uppercase tracking-widest hover:bg-purple-400 transition-all">Generate Combat Plan</button>
+                            <div class="grid grid-cols-3 gap-8 pt-8 border-t border-white/5">
+                                <div>
+                                    <p class="text-[10px] text-gray-500 uppercase tracking-widest mb-2">Academic Completion</p>
+                                    <p class="text-3xl font-light">74.2%</p>
                                 </div>
-                                <div class="border border-dashed border-white/10 rounded-[2rem] flex flex-col items-center justify-center p-8 text-center">
-                                    <i data-lucide="cpu" class="w-10 h-10 text-gray-700 mb-4"></i>
-                                    <p class="text-xs text-gray-600 italic">Enter details to shard syllabus into daily 45-minute sessions.</p>
+                                <div>
+                                    <p class="text-[10px] text-gray-500 uppercase tracking-widest mb-2">Weekly Goal</p>
+                                    <p class="text-3xl font-light">12 / 20</p>
+                                </div>
+                                <div>
+                                    <p class="text-[10px] text-gray-500 uppercase tracking-widest mb-2">XP Rank</p>
+                                    <p class="text-3xl font-light text-purple-400">Elite IV</p>
                                 </div>
                             </div>
                         </div>
-                    </div>
-                </template>
 
-                <!-- ANALYTICS VIEW -->
-                <template x-if="view === 'analytics'">
+                        <!-- Focus Timer Widget -->
+                        <div class="col-span-4 glass p-10 rounded-[3rem] text-center flex flex-col justify-center">
+                            <i data-lucide="timer" class="w-8 h-8 mx-auto mb-4 text-purple-400"></i>
+                            <p class="text-4xl font-mono mb-4">25:00</p>
+                            <button class="bg-white text-black px-6 py-2 rounded-full text-[10px] font-bold uppercase tracking-widest">Start Focus</button>
+                        </div>
+                    </div>
+
+                    <!-- Analytics Section -->
                     <div class="grid grid-cols-3 gap-8">
+                        <div class="glass p-8 rounded-[2rem]">
+                            <h5 class="text-xs font-bold uppercase tracking-widest mb-6">Study Distribution</h5>
+                            <canvas id="studyChart"></canvas>
+                        </div>
                         <div class="glass p-8 rounded-[2rem] col-span-2">
-                            <h4 class="text-sm font-bold uppercase tracking-widest mb-8">Productivity Heatmap</h4>
-                            <div class="h-48 flex items-end gap-2 px-4">
-                                <template x-for="i in 14">
-                                    <div class="flex-1 bg-purple-500/20 rounded-t-lg hover:bg-purple-400 transition-all" :style="'height:' + (Math.random() * 100) + '%'"></div>
-                                </template>
+                            <h5 class="text-xs font-bold uppercase tracking-widest mb-6">Extracurricular Roadmap</h5>
+                            <div class="space-y-4">
+                                <div class="flex justify-between items-center glass p-4 rounded-xl border-l-4 border-cyan-500">
+                                    <div>
+                                        <p class="text-sm font-bold">Hackathon Preparation</p>
+                                        <p class="text-[10px] text-gray-500">Next milestone: Prototype V1</p>
+                                    </div>
+                                    <i data-lucide="code" class="w-5 h-5 text-cyan-500"></i>
+                                </div>
+                                <div class="flex justify-between items-center glass p-4 rounded-xl border-l-4 border-amber-500">
+                                    <div>
+                                        <p class="text-sm font-bold">MUN Conference</p>
+                                        <p class="text-[10px] text-gray-500">Position paper due in 4 days</p>
+                                    </div>
+                                    <i data-lucide="megaphone" class="w-5 h-5 text-amber-500"></i>
+                                </div>
                             </div>
                         </div>
-                        <div class="glass p-8 rounded-[2rem] flex flex-col justify-center text-center">
-                            <p class="text-[10px] text-gray-500 uppercase tracking-widest mb-2">Weekly Focus Score</p>
-                            <h5 class="text-6xl font-light">94%</h5>
-                            <p class="text-[10px] text-green-400 font-bold mt-4 uppercase">↑ 12% from last week</p>
-                        </div>
                     </div>
-                </template>
+                </div>
 
             </div>
         </main>
     </div>
 
+    <!-- 3. MODAL: ADD SUBJECT -->
+    <template x-if="showSubjectModal">
+        <div class="fixed inset-0 z-[300] bg-black/80 backdrop-blur-sm flex items-center justify-center p-6">
+            <div class="max-w-md w-full glass p-10 rounded-[3rem] animate-in" @click.away="showSubjectModal = false">
+                <h3 class="text-2xl font-serif italic mb-8">Initialize Subject</h3>
+                <input x-model="newSubject.name" type="text" placeholder="Subject Name (e.g. Physics)" class="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 outline-none focus:border-purple-500 mb-6">
+                
+                <p class="text-[10px] uppercase font-bold text-gray-500 mb-4">Choose Signature Color</p>
+                <div class="flex gap-3 mb-8">
+                    <template x-for="color in ['#a78bfa', '#f87171', '#4ade80', '#60a5fa', '#fbbf24', '#f472b6']">
+                        <button @click="newSubject.color = color" :class="newSubject.color === color ? 'scale-125 border-white' : 'border-transparent'" class="w-8 h-8 rounded-full border-2 transition-all" :style="'background-color:' + color"></button>
+                    </template>
+                </div>
+
+                <div class="flex gap-4">
+                    <button @click="showSubjectModal = false" class="flex-1 py-4 text-gray-500 text-[10px] font-bold uppercase tracking-widest">Cancel</button>
+                    <button @click="createSubject()" class="flex-1 py-4 bg-white text-black rounded-2xl text-[10px] font-bold uppercase tracking-widest hover:bg-purple-400">Deploy</button>
+                </div>
+            </div>
+        </div>
+    </template>
+
     <script>
         function acadenceOS() {
             return {
-                authorized: false,
-                view: 'dashboard',
-                streak: 14,
-                countdown: '00D : 00H : 00M : 00S',
-                
-                init() {
-                    lucide.createIcons();
-                    this.startCountdown();
+                onboarded: false,
+                step: 1,
+                activeTab: 'dashboard',
+                streak: 12,
+                currentTime: '',
+                showSubjectModal: false,
+
+                user: {
+                    name: '', school: '', grade: '', board: '',
+                    schoolStart: '08:00', schoolEnd: '14:30', theme: 'oled'
                 },
 
-                markAttendance() {
-                    this.authorized = true;
-                    this.streak++;
-                    // Re-init icons for the new view
+                newSubject: { name: '', color: '#a78bfa' },
+                subjects: [],
+
+                init() {
+                    // Load Data from LocalStorage
+                    const savedData = localStorage.getItem('acadence_v3_data');
+                    if (savedData) {
+                        const parsed = JSON.parse(savedData);
+                        this.user = parsed.user;
+                        this.subjects = parsed.subjects;
+                        this.onboarded = true;
+                    }
+
+                    this.updateTime();
+                    setInterval(() => this.updateTime(), 1000);
+                    
+                    this.$watch('activeTab', () => {
+                        setTimeout(() => {
+                            lucide.createIcons();
+                            if(this.activeTab === 'dashboard') this.initCharts();
+                        }, 100);
+                    });
+
+                    lucide.createIcons();
+                },
+
+                updateTime() {
+                    this.currentTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+                },
+
+                completeOnboarding() {
+                    if (!this.user.name) return alert("Please enter your name.");
+                    this.onboarded = true;
+                    this.save();
                     setTimeout(() => lucide.createIcons(), 100);
                 },
 
-                getGreeting() {
-                    const hrs = new Date().getHours();
-                    if (hrs < 12) return "Identity Confirmed • Morning, Scholar";
-                    if (hrs < 18) return "Identity Confirmed • Afternoon, Scholar";
-                    return "Identity Confirmed • Evening, Scholar";
+                openSubjectModal() {
+                    this.activeTab = 'subjects';
+                    this.showSubjectModal = true;
                 },
 
-                viewTitle() {
-                    const titles = {
-                        dashboard: "Mission Control",
-                        academic: "Academic Vault",
-                        extra: "Extracurricular Hub",
-                        analytics: "Productivity Intelligence",
-                        wellness: "Biological Balance",
-                        ai: "Neural Assistant"
-                    };
-                    return titles[this.view];
+                createSubject() {
+                    if (!this.newSubject.name) return;
+                    this.subjects.push({
+                        name: this.newSubject.name,
+                        color: this.newSubject.color,
+                        tasks: []
+                    });
+                    this.newSubject = { name: '', color: '#a78bfa' };
+                    this.showSubjectModal = false;
+                    this.save();
+                    setTimeout(() => lucide.createIcons(), 50);
                 },
 
-                startCountdown() {
-                    const target = new Date();
-                    target.setDate(target.getDate() + 14); // Mock target 14 days away
+                deleteSubject(index) {
+                    if (confirm("De-initialize this subject and all its data?")) {
+                        this.subjects.splice(index, 1);
+                        this.save();
+                    }
+                },
 
-                    setInterval(() => {
-                        const now = new Date().getTime();
-                        const diff = target.getTime() - now;
+                addTask(subIndex) {
+                    const title = prompt("Define Task Objective:");
+                    if (title) {
+                        this.subjects[subIndex].tasks.push({
+                            title,
+                            type: 'homework',
+                            done: false
+                        });
+                        this.save();
+                    }
+                },
 
-                        const d = Math.floor(diff / (1000 * 60 * 60 * 24));
-                        const h = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-                        const m = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-                        const s = Math.floor((diff % (1000 * 60)) / 1000);
+                save() {
+                    localStorage.setItem('acadence_v3_data', JSON.stringify({
+                        user: this.user,
+                        subjects: this.subjects
+                    }));
+                },
 
-                        this.countdown = `${d}D : ${h}H : ${m}M : ${s}S`;
-                    }, 1000);
+                getTabTitle() {
+                    return this.activeTab.charAt(0).toUpperCase() + this.activeTab.slice(1);
+                },
+
+                initCharts() {
+                    const ctx = document.getElementById('studyChart');
+                    if (!ctx) return;
+                    
+                    // Destroy existing chart if it exists to prevent memory leaks
+                    if (window.myChart) window.myChart.destroy();
+
+                    window.myChart = new Chart(ctx, {
+                        type: 'doughnut',
+                        data: {
+                            labels: this.subjects.map(s => s.name),
+                            datasets: [{
+                                data: this.subjects.map(s => s.tasks.length + 1),
+                                backgroundColor: this.subjects.map(s => s.color),
+                                borderWidth: 0,
+                                borderRadius: 5
+                            }]
+                        },
+                        options: {
+                            plugins: { legend: { display: false } },
+                            cutout: '70%'
+                        }
+                    });
                 }
             }
         }
