@@ -1,387 +1,675 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en" class="h-full">
-<head>
+ <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Acadence | Student OS</title>
+  <title>Acadence</title>
   <script src="https://cdn.tailwindcss.com/3.4.17"></script>
   <script src="https://cdn.jsdelivr.net/npm/lucide@0.263.0/dist/umd/lucide.min.js"></script>
   <script src="/_sdk/element_sdk.js"></script>
   <script src="/_sdk/data_sdk.js"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
   <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          fontFamily: {
-            outfit: ['Outfit', 'sans-serif'],
-            mono: ['JetBrains Mono', 'monospace']
-          },
-          animation: {
-            'glow-slow': 'glow 4s infinite alternate',
-          },
-          keyframes: {
-            glow: {
-              '0%': { boxShadow: '0 0 10px rgba(99,102,241,0.1)' },
-              '100%': { boxShadow: '0 0 30px rgba(99,102,241,0.3)' }
-            }
-          }
-        }
+tailwind.config = {
+  theme: {
+    extend: {
+      fontFamily: {
+        outfit: ['Outfit', 'sans-serif'],
+        mono: ['JetBrains Mono', 'monospace']
       }
     }
-  </script>
+  }
+}
+</script>
   <style>
-    html, body { height: 100%; margin: 0; font-family: 'Outfit', sans-serif; scroll-behavior: smooth; }
-    .gradient-bg { background: radial-gradient(circle at top right, #1e1e3f, #0f0f1a 40%), #0f0f1a; }
-    .card-glass { background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.08); backdrop-filter: blur(12px); transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
-    .card-glass:hover { background: rgba(255,255,255,0.05); border-color: rgba(99,102,241,0.3); transform: translateY(-2px); }
-    .sidebar-item { transition: all 0.2s; padding: 12px 16px; border-radius: 12px; cursor: pointer; display: flex; align-items: center; gap: 12px; color: rgba(255,255,255,0.5); }
-    .sidebar-item:hover, .sidebar-item.active { background: rgba(99,102,241,0.15); color: #fff; }
-    .sidebar-item.active { box-shadow: inset 4px 0 0 #6366f1; background: linear-gradient(90deg, rgba(99,102,241,0.1) 0%, transparent 100%); }
-    .btn-primary { background: linear-gradient(135deg, #6366f1, #8b5cf6); color: #fff; transition: all 0.3s; }
-    .btn-primary:hover { box-shadow: 0 0 25px rgba(99,102,241,0.5); transform: scale(1.02); }
-    .custom-scrollbar::-webkit-scrollbar { width: 4px; }
-    .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 10px; }
-    .nav-blur { backdrop-filter: blur(20px); background: rgba(15,15,26,0.8); }
-    .stat-ring { transform: rotate(-90deg); transform-origin: 50% 50%; }
-  </style>
-</head>
-<body class="h-full text-white selection:bg-indigo-500/30">
-  <div class="h-full w-full overflow-hidden gradient-bg flex flex-col" id="app">
-    
-    <!-- 1. LANDING PAGE -->
-    <div id="landing-page" class="flex-1 overflow-auto custom-scrollbar">
-      <nav class="flex items-center justify-between px-10 py-6 sticky top-0 z-50 nav-blur border-b border-white/5">
-        <div class="flex items-center gap-3">
-          <div class="w-10 h-10 rounded-xl bg-indigo-600 flex items-center justify-center shadow-lg shadow-indigo-500/20">
-            <i data-lucide="graduation-cap" class="w-6 h-6"></i>
-          </div>
-          <span class="font-black text-2xl tracking-tighter" id="brand-title">Acadence</span>
-        </div>
-        <div class="hidden md:flex gap-8 font-medium text-white/60">
-          <a href="#features" class="hover:text-white transition">Features</a>
-          <a href="#pricing" class="hover:text-white transition">Pricing</a>
-          <a href="#faq" class="hover:text-white transition">Support</a>
-        </div>
-        <button onclick="showApp()" class="btn-primary px-6 py-2.5 rounded-full font-bold text-sm">Launch OS</button>
-      </nav>
-
-      <section class="max-w-6xl mx-auto px-6 pt-32 pb-40 text-center">
-        <div class="inline-block px-4 py-1.5 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-xs font-bold uppercase tracking-widest mb-8 animate-bounce">
-          System v3.0 Now Live
-        </div>
-        <h1 class="text-6xl md:text-8xl font-black mb-8 leading-[1.1] tracking-tight">
-          Your Entire Life <br/>
-          <span class="bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">In One Unified OS.</span>
-        </h1>
-        <p class="text-xl text-white/40 max-w-2xl mx-auto mb-12 font-medium">
-          The premium student workstation that replaces Notion, Google Calendar, and Habitica. Built for high-performers.
-        </p>
-        <div class="flex flex-wrap justify-center gap-6">
-          <button onclick="showApp()" class="btn-primary text-xl px-12 py-5 rounded-2xl font-bold flex items-center gap-3">
-            Start Your Journey <i data-lucide="arrow-right" class="w-6 h-6"></i>
-          </button>
-        </div>
-      </section>
+html, body { height: 100%; margin: 0; font-family: 'Outfit', sans-serif; }
+.app-wrapper { height: 100%; width: 100%; overflow: auto; }
+.gradient-bg { background: linear-gradient(135deg, #0f0f1a 0%, #1a1a2e 50%, #16213e 100%); }
+.card-glass { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); backdrop-filter: blur(10px); }
+.card-glass:hover { background: rgba(255,255,255,0.06); border-color: rgba(255,255,255,0.15); }
+.glow-accent { box-shadow: 0 0 30px rgba(99,102,241,0.15); }
+.sidebar-item { transition: all 0.2s; padding: 10px 16px; border-radius: 10px; cursor: pointer; display: flex; align-items: center; gap: 12px; color: rgba(255,255,255,0.6); }
+.sidebar-item:hover, .sidebar-item.active { background: rgba(99,102,241,0.15); color: #fff; }
+.sidebar-item.active { box-shadow: inset 3px 0 0 #6366f1; }
+.pulse-dot { animation: pulse 2s infinite; }
+@keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.4; } }
+@keyframes fadeIn { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
+.fade-in { animation: fadeIn 0.4s ease; }
+.stat-card { background: linear-gradient(135deg, rgba(99,102,241,0.1), rgba(139,92,246,0.05)); border: 1px solid rgba(99,102,241,0.2); }
+.progress-ring { transition: stroke-dashoffset 0.6s ease; }
+input, textarea, select { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: #fff; padding: 10px 14px; border-radius: 8px; outline: none; font-family: 'Outfit', sans-serif; }
+input:focus, textarea:focus, select:focus { border-color: #6366f1; box-shadow: 0 0 0 2px rgba(99,102,241,0.2); }
+input::placeholder, textarea::placeholder { color: rgba(255,255,255,0.3); }
+.btn-primary { background: linear-gradient(135deg, #6366f1, #8b5cf6); color: #fff; padding: 10px 20px; border-radius: 10px; font-weight: 600; cursor: pointer; border: none; transition: all 0.2s; }
+.btn-primary:hover { transform: translateY(-1px); box-shadow: 0 4px 20px rgba(99,102,241,0.4); }
+.btn-primary:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+.btn-secondary { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: #fff; padding: 10px 20px; border-radius: 10px; font-weight: 500; cursor: pointer; transition: all 0.2s; }
+.btn-secondary:hover { background: rgba(255,255,255,0.1); }
+.badge { padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+.toast { position: fixed; bottom: 24px; right: 24px; background: #1e1e2e; border: 1px solid rgba(99,102,241,0.3); color: #fff; padding: 14px 20px; border-radius: 12px; z-index: 9999; animation: fadeIn 0.3s ease; display: flex; align-items: center; gap: 10px; }
+.kanban-col { min-height: 200px; }
+.drag-over { border: 2px dashed #6366f1 !important; background: rgba(99,102,241,0.05) !important; }
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 3px; }
+</style>
+  <style>body { box-sizing: border-box; }</style>
+ </head>
+ <body class="h-full">
+  <div class="app-wrapper gradient-bg" id="app"><!-- Landing Page -->
+   <div id="landing-page" class="w-full h-full overflow-auto">
+    <nav class="flex items-center justify-between px-8 py-5 sticky top-0 z-50" style="background:rgba(15,15,26,0.9);backdrop-filter:blur(20px)">
+     <div class="flex items-center gap-3">
+      <div class="w-9 h-9 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center font-bold text-white text-sm">
+       A
+      </div><span class="text-white font-bold text-xl" id="brand-title">Acadence</span>
+     </div>
+     <div class="hidden md:flex items-center gap-8 text-sm text-white/60"><a href="#features" class="hover:text-white transition">Features</a> <a href="#pricing" class="hover:text-white transition">Pricing</a> <a href="#faq" class="hover:text-white transition">FAQ</a>
+     </div><button onclick="showApp()" class="btn-primary text-sm">Get Started Free</button>
+    </nav><!-- Hero -->
+    <section class="px-8 pt-20 pb-32 text-center max-w-5xl mx-auto fade-in">
+     <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 text-sm mb-8"><span class="pulse-dot w-2 h-2 rounded-full bg-indigo-400"></span> Now in Beta — Join 10,000+ students
+     </div>
+     <h1 class="text-4xl md:text-6xl lg:text-7xl font-900 text-white leading-tight mb-6" id="hero-title">Master School, Studies,<br>
+      and Life — <span class="bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent">All in One Place</span></h1>
+     <p class="text-lg md:text-xl text-white/50 max-w-2xl mx-auto mb-10">The ultimate productivity platform built exclusively for students. Manage academics, habits, goals, and growth in one beautiful workspace.</p>
+     <div class="flex flex-col sm:flex-row gap-4 justify-center"><button onclick="showApp()" class="btn-primary text-lg px-8 py-4">Start Free Today</button> <button class="btn-secondary text-lg px-8 py-4 flex items-center gap-2 justify-center"><i data-lucide="play-circle" class="w-5 h-5"></i> Watch Demo</button>
+     </div><!-- Stats -->
+     <div class="grid grid-cols-3 gap-6 mt-20 max-w-lg mx-auto">
+      <div>
+       <div class="text-2xl font-bold text-white">
+        10K+
+       </div>
+       <div class="text-xs text-white/40">
+        Students
+       </div>
+      </div>
+      <div>
+       <div class="text-2xl font-bold text-white">
+        4.9★
+       </div>
+       <div class="text-xs text-white/40">
+        Rating
+       </div>
+      </div>
+      <div>
+       <div class="text-2xl font-bold text-white">
+        50K+
+       </div>
+       <div class="text-xs text-white/40">
+        Tasks Done
+       </div>
+      </div>
+     </div>
+    </section><!-- Features -->
+    <section id="features" class="px-8 py-20 max-w-6xl mx-auto">
+     <h2 class="text-3xl md:text-4xl font-bold text-white text-center mb-4">Everything You Need</h2>
+     <p class="text-white/40 text-center mb-16 max-w-xl mx-auto">One platform to replace your scattered tools</p>
+     <div class="grid md:grid-cols-3 gap-6">
+      <div class="card-glass rounded-2xl p-6">
+       <div class="w-10 h-10 rounded-xl bg-indigo-500/20 flex items-center justify-center mb-4">
+        <i data-lucide="book-open" class="w-5 h-5 text-indigo-400"></i>
+       </div>
+       <h3 class="text-white font-semibold mb-2">Academic Manager</h3>
+       <p class="text-white/40 text-sm">Subjects, chapters, homework, exams — all organized beautifully.</p>
+      </div>
+      <div class="card-glass rounded-2xl p-6">
+       <div class="w-10 h-10 rounded-xl bg-purple-500/20 flex items-center justify-center mb-4">
+        <i data-lucide="calendar" class="w-5 h-5 text-purple-400"></i>
+       </div>
+       <h3 class="text-white font-semibold mb-2">Smart Timetable</h3>
+       <p class="text-white/40 text-sm">Auto-generate or manually create your perfect weekly schedule.</p>
+      </div>
+      <div class="card-glass rounded-2xl p-6">
+       <div class="w-10 h-10 rounded-xl bg-emerald-500/20 flex items-center justify-center mb-4">
+        <i data-lucide="target" class="w-5 h-5 text-emerald-400"></i>
+       </div>
+       <h3 class="text-white font-semibold mb-2">Goal Tracking</h3>
+       <p class="text-white/40 text-sm">Set academic and personal goals with visual progress tracking.</p>
+      </div>
+      <div class="card-glass rounded-2xl p-6">
+       <div class="w-10 h-10 rounded-xl bg-amber-500/20 flex items-center justify-center mb-4">
+        <i data-lucide="trophy" class="w-5 h-5 text-amber-400"></i>
+       </div>
+       <h3 class="text-white font-semibold mb-2">Extracurriculars</h3>
+       <p class="text-white/40 text-sm">Track sports, music, competitions, and every achievement.</p>
+      </div>
+      <div class="card-glass rounded-2xl p-6">
+       <div class="w-10 h-10 rounded-xl bg-rose-500/20 flex items-center justify-center mb-4">
+        <i data-lucide="heart" class="w-5 h-5 text-rose-400"></i>
+       </div>
+       <h3 class="text-white font-semibold mb-2">Wellness Hub</h3>
+       <p class="text-white/40 text-sm">Mood tracking, sleep logs, and mindfulness tools.</p>
+      </div>
+      <div class="card-glass rounded-2xl p-6">
+       <div class="w-10 h-10 rounded-xl bg-cyan-500/20 flex items-center justify-center mb-4">
+        <i data-lucide="bar-chart-3" class="w-5 h-5 text-cyan-400"></i>
+       </div>
+       <h3 class="text-white font-semibold mb-2">Study Analytics</h3>
+       <p class="text-white/40 text-sm">Beautiful charts showing your progress and streaks.</p>
+      </div>
+     </div>
+    </section><!-- Pricing -->
+    <section id="pricing" class="px-8 py-20 max-w-4xl mx-auto">
+     <h2 class="text-3xl font-bold text-white text-center mb-12">Simple Pricing</h2>
+     <div class="grid md:grid-cols-2 gap-6">
+      <div class="card-glass rounded-2xl p-8">
+       <h3 class="text-white font-bold text-xl mb-2">Free</h3>
+       <div class="text-3xl font-bold text-white mb-4">
+        $0<span class="text-sm text-white/40">/forever</span>
+       </div>
+       <ul class="space-y-3 text-white/60 text-sm mb-8">
+        <li>✓ Unlimited subjects</li>
+        <li>✓ Timetable generator</li>
+        <li>✓ Homework planner</li>
+        <li>✓ Basic analytics</li>
+       </ul><button onclick="showApp()" class="btn-secondary w-full">Get Started</button>
+      </div>
+      <div class="rounded-2xl p-8 border-2 border-indigo-500/40 glow-accent" style="background:rgba(99,102,241,0.05)">
+       <div class="badge bg-indigo-500/20 text-indigo-300 mb-4 inline-block">
+        Popular
+       </div>
+       <h3 class="text-white font-bold text-xl mb-2">Pro</h3>
+       <div class="text-3xl font-bold text-white mb-4">
+        $5<span class="text-sm text-white/40">/month</span>
+       </div>
+       <ul class="space-y-3 text-white/60 text-sm mb-8">
+        <li>✓ Everything in Free</li>
+        <li>✓ AI study planner</li>
+        <li>✓ Advanced analytics</li>
+        <li>✓ Priority support</li>
+       </ul><button onclick="showApp()" class="btn-primary w-full">Start Pro Trial</button>
+      </div>
+     </div>
+    </section><!-- FAQ -->
+    <section id="faq" class="px-8 py-20 max-w-3xl mx-auto">
+     <h2 class="text-3xl font-bold text-white text-center mb-12">FAQ</h2>
+     <div class="space-y-4" id="faq-list"></div>
+    </section><!-- Footer -->
+    <footer class="px-8 py-12 border-t border-white/5 text-center">
+     <div class="flex items-center justify-center gap-3 mb-4">
+      <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center font-bold text-white text-xs">
+       A
+      </div><span class="text-white font-bold">Acadence</span>
+     </div>
+     <p class="text-white/30 text-sm">© 2024 Acadence. Built for students, by students.</p>
+    </footer>
+   </div><!-- Main App -->
+   <div id="main-app" class="w-full h-full hidden" style="display:none">
+    <div class="flex h-full w-full"><!-- Sidebar -->
+     <aside class="w-64 shrink-0 border-r border-white/5 p-4 flex flex-col h-full overflow-auto hidden md:flex" style="background:rgba(10,10,20,0.6)">
+      <div class="flex items-center gap-3 mb-8 px-2">
+       <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center font-bold text-white text-xs">
+        A
+       </div><span class="text-white font-bold" id="sidebar-brand">Acadence</span>
+      </div>
+      <div class="space-y-1 flex-1">
+       <div class="sidebar-item active" data-page="dashboard" onclick="navigate('dashboard')">
+        <i data-lucide="layout-dashboard" class="w-4 h-4"></i><span class="text-sm">Dashboard</span>
+       </div>
+       <div class="sidebar-item" data-page="subjects" onclick="navigate('subjects')">
+        <i data-lucide="book-open" class="w-4 h-4"></i><span class="text-sm">Subjects</span>
+       </div>
+       <div class="sidebar-item" data-page="timetable" onclick="navigate('timetable')">
+        <i data-lucide="calendar" class="w-4 h-4"></i><span class="text-sm">Timetable</span>
+       </div>
+       <div class="sidebar-item" data-page="homework" onclick="navigate('homework')">
+        <i data-lucide="clipboard-list" class="w-4 h-4"></i><span class="text-sm">Homework</span>
+       </div>
+       <div class="sidebar-item" data-page="exams" onclick="navigate('exams')">
+        <i data-lucide="file-text" class="w-4 h-4"></i><span class="text-sm">Exams</span>
+       </div>
+       <div class="sidebar-item" data-page="activities" onclick="navigate('activities')">
+        <i data-lucide="trophy" class="w-4 h-4"></i><span class="text-sm">Activities</span>
+       </div>
+       <div class="sidebar-item" data-page="analytics" onclick="navigate('analytics')">
+        <i data-lucide="bar-chart-3" class="w-4 h-4"></i><span class="text-sm">Analytics</span>
+       </div>
+       <div class="sidebar-item" data-page="wellness" onclick="navigate('wellness')">
+        <i data-lucide="heart" class="w-4 h-4"></i><span class="text-sm">Wellness</span>
+       </div>
+      </div>
+      <div class="sidebar-item mt-auto" onclick="showLanding()">
+       <i data-lucide="log-out" class="w-4 h-4"></i><span class="text-sm">Sign Out</span>
+      </div>
+     </aside><!-- Content -->
+     <main class="flex-1 h-full overflow-auto p-6 md:p-8" id="main-content"></main>
     </div>
-
-    <!-- 2. MAIN APPLICATION -->
-    <div id="main-app" class="h-full w-full hidden flex overflow-hidden">
-      <!-- SIDEBAR -->
-      <aside class="w-72 shrink-0 border-r border-white/5 p-6 flex flex-col h-full bg-[#0a0a0f]/80 backdrop-blur-xl">
-        <div class="flex items-center gap-4 mb-10 px-2">
-          <div class="w-10 h-10 rounded-xl bg-indigo-600 flex items-center justify-center font-bold shadow-lg shadow-indigo-500/20">A</div>
-          <span class="font-black text-xl tracking-tighter" id="sidebar-brand">Acadence</span>
-        </div>
-        
-        <div class="space-y-1 flex-1 overflow-y-auto custom-scrollbar">
-          <p class="text-[10px] font-bold text-white/20 uppercase tracking-[0.2em] mb-3 px-4">Core</p>
-          <div class="sidebar-item active" data-page="dashboard" onclick="navigate('dashboard')">
-            <i data-lucide="layout-dashboard" class="w-5 h-5"></i><span class="font-semibold">Dashboard</span>
-          </div>
-          <div class="sidebar-item" data-page="subjects" onclick="navigate('subjects')">
-            <i data-lucide="book-open" class="w-5 h-5"></i><span class="font-semibold">Academics</span>
-          </div>
-          <div class="sidebar-item" data-page="timetable" onclick="navigate('timetable')">
-            <i data-lucide="calendar" class="w-5 h-5"></i><span class="font-semibold">Timetable</span>
-          </div>
-          
-          <p class="text-[10px] font-bold text-white/20 uppercase tracking-[0.2em] mt-8 mb-3 px-4">Performance</p>
-          <div class="sidebar-item" data-page="homework" onclick="navigate('homework')">
-            <i data-lucide="check-circle" class="w-5 h-5"></i><span class="font-semibold">Homework</span>
-          </div>
-          <div class="sidebar-item" data-page="activities" onclick="navigate('activities')">
-            <i data-lucide="trophy" class="w-5 h-5"></i><span class="font-semibold">Extracurriculars</span>
-          </div>
-          <div class="sidebar-item" data-page="wellness" onclick="navigate('wellness')">
-            <i data-lucide="heart" class="w-5 h-5"></i><span class="font-semibold">Wellness Hub</span>
-          </div>
-          <div class="sidebar-item" data-page="analytics" onclick="navigate('analytics')">
-            <i data-lucide="bar-chart-3" class="w-5 h-5"></i><span class="font-semibold">Analytics</span>
-          </div>
-        </div>
-
-        <div class="mt-auto pt-6 border-t border-white/5">
-          <div class="sidebar-item hover:text-red-400" onclick="showLanding()">
-            <i data-lucide="log-out" class="w-5 h-5"></i><span class="font-semibold">Sign Out</span>
-          </div>
-        </div>
-      </aside>
-
-      <!-- CONTENT AREA -->
-      <main class="flex-1 h-full overflow-y-auto p-8 md:p-12 custom-scrollbar bg-[#050508]" id="main-content">
-        <!-- Content gets injected here -->
-      </main>
-    </div>
+   </div>
   </div>
-
   <script>
-    // --- STATE MANAGEMENT ---
-    let currentPage = 'dashboard';
-    let allData = [];
-    const defaultConfig = { app_title: 'Acadence', greeting_text: 'Level Up, Student' };
+// State
+let currentPage = 'dashboard';
+let allData = [];
+let recordCount = 0;
 
-    // --- DATA HANDLING ---
-    const dataHandler = {
-      onDataChanged(data) {
-        allData = data;
-        if (document.getElementById('main-app').style.display !== 'none') renderPage();
-      }
-    };
-
-    (async () => {
-      await window.dataSdk.init(dataHandler);
-      window.elementSdk.init({ 
-        defaultConfig, 
-        onConfigChange: (c) => renderPage(),
-        mapToCapabilities: (c) => ({ recolorables: [], fontEditable: {get:()=>'Outfit', set:()=>{}} })
-      });
-      lucide.createIcons();
-    })();
-
-    // --- NAVIGATION ---
-    function showApp() {
-      document.getElementById('landing-page').classList.add('hidden');
-      document.getElementById('main-app').classList.remove('hidden');
+// Data SDK
+const dataHandler = {
+  onDataChanged(data) {
+    allData = data;
+    recordCount = data.length;
+    if (document.getElementById('main-app').style.display !== 'none') {
       renderPage();
     }
-    function showLanding() {
-      document.getElementById('landing-page').classList.remove('hidden');
-      document.getElementById('main-app').classList.add('hidden');
-    }
-    function navigate(page) {
-      currentPage = page;
-      document.querySelectorAll('.sidebar-item').forEach(el => el.classList.toggle('active', el.dataset.page === page));
-      renderPage();
-    }
+  }
+};
 
-    // --- VIEW RENDERING ---
-    function renderPage() {
-      const mc = document.getElementById('main-content');
-      const config = window.elementSdk.config || defaultConfig;
-      
-      switch(currentPage) {
-        case 'dashboard': mc.innerHTML = renderDashboard(config); break;
-        case 'subjects': mc.innerHTML = renderAcademics(); break;
-        case 'timetable': mc.innerHTML = renderTimetable(); break;
-        case 'homework': mc.innerHTML = renderHomework(); break;
-        case 'wellness': mc.innerHTML = renderWellness(); break;
-        case 'activities': mc.innerHTML = renderActivities(); break;
-        case 'analytics': mc.innerHTML = renderAnalytics(); break;
-      }
-      lucide.createIcons();
-    }
+// Element SDK
+const defaultConfig = {
+  app_title: 'Acadence',
+  greeting_text: 'Welcome back',
+  background_color: '#0f0f1a',
+  surface_color: '#1a1a2e',
+  text_color: '#ffffff',
+  primary_action_color: '#6366f1',
+  secondary_action_color: '#8b5cf6'
+};
 
-    function renderDashboard(config) {
-      const hw = allData.filter(d => d.type === 'homework' && !d.completed);
-      const subjects = allData.filter(d => d.type === 'subject');
-      const streak = 7; // Mocked logic for UI polish
-      
-      return `
-        <div class="max-w-6xl mx-auto space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-700">
-          <header class="flex justify-between items-end">
-            <div>
-              <h1 class="text-4xl font-black tracking-tight mb-2">${config.greeting_text}</h1>
-              <p class="text-white/40 font-medium italic">"The secret of getting ahead is getting started."</p>
-            </div>
-            <div class="flex gap-4">
-              <div class="card-glass px-6 py-3 rounded-2xl flex items-center gap-3">
-                <span class="text-orange-500 text-xl font-bold">🔥 ${streak}</span>
-                <span class="text-[10px] font-bold uppercase tracking-widest text-white/30">Day Streak</span>
-              </div>
-            </div>
-          </header>
+window.elementSdk.init({
+  defaultConfig,
+  onConfigChange: async (config) => {
+    const title = config.app_title || defaultConfig.app_title;
+    document.querySelectorAll('#brand-title, #sidebar-brand').forEach(el => el.textContent = title);
+    const greeting = config.greeting_text || defaultConfig.greeting_text;
+    const greetEl = document.getElementById('greeting-text');
+    if (greetEl) greetEl.textContent = greeting;
+  },
+  mapToCapabilities: (config) => ({
+    recolorables: [
+      { get: () => config.background_color || defaultConfig.background_color, set: (v) => { config.background_color = v; window.elementSdk.setConfig({ background_color: v }); }},
+      { get: () => config.surface_color || defaultConfig.surface_color, set: (v) => { config.surface_color = v; window.elementSdk.setConfig({ surface_color: v }); }},
+      { get: () => config.text_color || defaultConfig.text_color, set: (v) => { config.text_color = v; window.elementSdk.setConfig({ text_color: v }); }},
+      { get: () => config.primary_action_color || defaultConfig.primary_action_color, set: (v) => { config.primary_action_color = v; window.elementSdk.setConfig({ primary_action_color: v }); }},
+      { get: () => config.secondary_action_color || defaultConfig.secondary_action_color, set: (v) => { config.secondary_action_color = v; window.elementSdk.setConfig({ secondary_action_color: v }); }}
+    ],
+    borderables: [],
+    fontEditable: { get: () => config.font_family || 'Outfit', set: (v) => { config.font_family = v; window.elementSdk.setConfig({ font_family: v }); }},
+    fontSizeable: { get: () => config.font_size || 16, set: (v) => { config.font_size = v; window.elementSdk.setConfig({ font_size: v }); }}
+  }),
+  mapToEditPanelValues: (config) => new Map([
+    ['app_title', config.app_title || defaultConfig.app_title],
+    ['greeting_text', config.greeting_text || defaultConfig.greeting_text]
+  ])
+});
 
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div class="card-glass p-8 rounded-[2.5rem] bg-indigo-500/5">
-              <div class="flex justify-between items-start mb-6">
-                <div class="w-12 h-12 rounded-2xl bg-indigo-500/20 flex items-center justify-center text-indigo-400">
-                  <i data-lucide="book-open" class="w-6 h-6"></i>
-                </div>
-                <span class="text-3xl font-black">${subjects.length}</span>
-              </div>
-              <h3 class="font-bold text-lg">Active Subjects</h3>
-              <p class="text-white/40 text-sm mt-1">Manage your curriculum</p>
-            </div>
+(async () => {
+  const r = await window.dataSdk.init(dataHandler);
+  if (!r.isOk) console.error('Data SDK init failed');
+})();
 
-            <div class="card-glass p-8 rounded-[2.5rem] bg-purple-500/5">
-              <div class="flex justify-between items-start mb-6">
-                <div class="w-12 h-12 rounded-2xl bg-purple-500/20 flex items-center justify-center text-purple-400">
-                  <i data-lucide="clock" class="w-6 h-6"></i>
-                </div>
-                <span class="text-3xl font-black">${hw.length}</span>
-              </div>
-              <h3 class="font-bold text-lg">Tasks Pending</h3>
-              <p class="text-white/40 text-sm mt-1">Deadlines approaching</p>
-            </div>
+// Navigation
+function showApp() {
+  document.getElementById('landing-page').style.display = 'none';
+  document.getElementById('main-app').style.display = 'flex';
+  renderPage();
+  lucide.createIcons();
+}
+function showLanding() {
+  document.getElementById('landing-page').style.display = 'block';
+  document.getElementById('main-app').style.display = 'none';
+}
+function navigate(page) {
+  currentPage = page;
+  document.querySelectorAll('.sidebar-item').forEach(el => {
+    el.classList.toggle('active', el.dataset.page === page);
+  });
+  renderPage();
+}
 
-            <div class="card-glass p-8 rounded-[2.5rem] bg-emerald-500/5">
-              <div class="flex justify-between items-start mb-6">
-                <div class="w-12 h-12 rounded-2xl bg-emerald-500/20 flex items-center justify-center text-emerald-400">
-                  <i data-lucide="zap" class="w-6 h-6"></i>
-                </div>
-                <span class="text-3xl font-black">94%</span>
-              </div>
-              <h3 class="font-bold text-lg">Focus Score</h3>
-              <p class="text-white/40 text-sm mt-1">Performance index</p>
-            </div>
-          </div>
+function renderPage() {
+  const mc = document.getElementById('main-content');
+  switch(currentPage) {
+    case 'dashboard': mc.innerHTML = renderDashboard(); break;
+    case 'subjects': mc.innerHTML = renderSubjects(); break;
+    case 'timetable': mc.innerHTML = renderTimetable(); break;
+    case 'homework': mc.innerHTML = renderHomework(); break;
+    case 'exams': mc.innerHTML = renderExams(); break;
+    case 'activities': mc.innerHTML = renderActivities(); break;
+    case 'analytics': mc.innerHTML = renderAnalytics(); break;
+    case 'wellness': mc.innerHTML = renderWellness(); break;
+  }
+  lucide.createIcons();
+}
 
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mt-10">
-            <div class="card-glass p-8 rounded-[2.5rem]">
-              <h3 class="text-xl font-bold mb-6 flex items-center gap-3">
-                <i data-lucide="list-todo" class="w-5 h-5 text-indigo-400"></i> Critical Tasks
-              </h3>
-              <div class="space-y-4">
-                ${hw.slice(0,4).map(h => `
-                  <div class="flex items-center gap-4 p-4 rounded-2xl bg-white/5 border border-white/5">
-                    <div class="w-2 h-10 rounded-full bg-indigo-500"></div>
-                    <div class="flex-1">
-                      <p class="font-bold text-sm">${h.name}</p>
-                      <p class="text-[10px] text-white/30 uppercase font-black">${h.subject}</p>
-                    </div>
-                    <button onclick="toggleHw('${h.__backendId}', true)" class="w-8 h-8 rounded-lg bg-white/5 hover:bg-emerald-500/20 flex items-center justify-center transition">
-                      <i data-lucide="check" class="w-4 h-4"></i>
-                    </button>
-                  </div>
-                `).join('') || '<p class="text-white/20 text-center py-10 italic">No pending tasks. Relax!</p>'}
-              </div>
-            </div>
+// Helpers
+function getByType(type) { return allData.filter(d => d.type === type); }
+function toast(msg) {
+  const t = document.createElement('div');
+  t.className = 'toast';
+  t.innerHTML = `<i data-lucide="check-circle" class="w-4 h-4 text-emerald-400"></i><span class="text-sm">${msg}</span>`;
+  document.body.appendChild(t);
+  lucide.createIcons();
+  setTimeout(() => t.remove(), 3000);
+}
 
-            <div class="card-glass p-8 rounded-[2.5rem] flex flex-col">
-              <h3 class="text-xl font-bold mb-6 flex items-center gap-3">
-                <i data-lucide="brain-circuit" class="w-5 h-5 text-purple-400"></i> AI Study Buddy
-              </h3>
-              <div class="flex-1 flex flex-col justify-center text-center px-4">
-                <div class="w-20 h-20 bg-indigo-600/20 rounded-full mx-auto mb-6 flex items-center justify-center animate-pulse">
-                  <i data-lucide="sparkles" class="w-10 h-10 text-indigo-400"></i>
-                </div>
-                <p class="text-sm font-medium leading-relaxed">
-                  "I've noticed your focus dips at 4 PM. Try moving your <span class="text-indigo-400 font-bold">Physics</span> review to the morning block for 20% better retention."
-                </p>
-                <button class="mt-8 btn-primary py-3 rounded-xl font-bold text-xs">View Optimized Schedule</button>
-              </div>
-            </div>
-          </div>
+// Dashboard
+function renderDashboard() {
+  const subjects = getByType('subject');
+  const homework = getByType('homework');
+  const pending = homework.filter(h => !h.completed).length;
+  const exams = getByType('exam');
+  const streak = Math.min(allData.length, 7);
+  const config = window.elementSdk.config;
+  const greeting = config.greeting_text || defaultConfig.greeting_text;
+  return `<div class="fade-in">
+    <h1 class="text-2xl md:text-3xl font-bold text-white mb-1" id="greeting-text">${greeting}</h1>
+    <p class="text-white/40 mb-8">Here's your academic overview</p>
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+      <div class="stat-card rounded-xl p-5"><div class="text-2xl font-bold text-white">${subjects.length}</div><div class="text-xs text-white/40 mt-1">Subjects</div></div>
+      <div class="stat-card rounded-xl p-5"><div class="text-2xl font-bold text-white">${pending}</div><div class="text-xs text-white/40 mt-1">Pending Tasks</div></div>
+      <div class="stat-card rounded-xl p-5"><div class="text-2xl font-bold text-white">${exams.length}</div><div class="text-xs text-white/40 mt-1">Upcoming Exams</div></div>
+      <div class="stat-card rounded-xl p-5"><div class="text-2xl font-bold text-white">${streak}🔥</div><div class="text-xs text-white/40 mt-1">Day Streak</div></div>
+    </div>
+    <div class="grid md:grid-cols-2 gap-6">
+      <div class="card-glass rounded-2xl p-6">
+        <h3 class="text-white font-semibold mb-4 flex items-center gap-2"><i data-lucide="clipboard-list" class="w-4 h-4 text-indigo-400"></i> Recent Homework</h3>
+        ${homework.length === 0 ? '<p class="text-white/30 text-sm">No homework yet. Add some from the Homework tab!</p>' :
+        homework.slice(-5).reverse().map(h => `<div class="flex items-center justify-between py-2 border-b border-white/5">
+          <div class="flex items-center gap-3"><span class="w-2 h-2 rounded-full ${h.completed ? 'bg-emerald-400' : 'bg-amber-400'}"></span><span class="text-sm text-white/80">${h.name}</span></div>
+          <span class="text-xs text-white/30">${h.subject || ''}</span>
+        </div>`).join('')}
+      </div>
+      <div class="card-glass rounded-2xl p-6">
+        <h3 class="text-white font-semibold mb-4 flex items-center gap-2"><i data-lucide="zap" class="w-4 h-4 text-amber-400"></i> Quick Actions</h3>
+        <div class="grid grid-cols-2 gap-3">
+          <button onclick="navigate('homework')" class="btn-secondary text-sm py-3">+ Homework</button>
+          <button onclick="navigate('subjects')" class="btn-secondary text-sm py-3">+ Subject</button>
+          <button onclick="navigate('exams')" class="btn-secondary text-sm py-3">+ Exam</button>
+          <button onclick="navigate('activities')" class="btn-secondary text-sm py-3">+ Activity</button>
         </div>
-      `;
-    }
+      </div>
+    </div>
+  </div>`;
+}
 
-    // --- WELLNESS HUB ---
-    function renderWellness() {
-      return `
-        <div class="max-w-4xl mx-auto space-y-10 animate-in fade-in duration-500">
-          <header>
-            <h1 class="text-4xl font-black tracking-tight mb-2">Wellness Hub</h1>
-            <p class="text-white/40">Healthy body, high-performing mind.</p>
-          </header>
+// Subjects
+function renderSubjects() {
+  const subjects = getByType('subject');
+  const colors = ['#6366f1','#8b5cf6','#ec4899','#f59e0b','#10b981','#06b6d4','#f43f5e','#84cc16'];
+  return `<div class="fade-in">
+    <div class="flex items-center justify-between mb-8">
+      <div><h1 class="text-2xl font-bold text-white">Subjects</h1><p class="text-white/40 text-sm">${subjects.length} subjects added</p></div>
+      <button class="btn-primary text-sm" onclick="showAddSubject()">+ Add Subject</button>
+    </div>
+    <div id="add-subject-form" class="hidden card-glass rounded-2xl p-6 mb-6">
+      <div class="grid md:grid-cols-3 gap-4">
+        <input id="subj-name" placeholder="Subject name" class="w-full">
+        <input id="subj-notes" placeholder="Teacher / Notes" class="w-full">
+        <button onclick="addSubject()" class="btn-primary">Save Subject</button>
+      </div>
+    </div>
+    <div class="grid md:grid-cols-3 gap-4">
+      ${subjects.map((s, i) => `<div class="card-glass rounded-2xl p-5 relative group">
+        <div class="w-3 h-3 rounded-full absolute top-5 right-5" style="background:${s.color || colors[i % colors.length]}"></div>
+        <h3 class="text-white font-semibold mb-1">${s.name}</h3>
+        <p class="text-white/30 text-xs mb-3">${s.notes || ''}</p>
+        <button onclick="deleteRecord('${s.__backendId}')" class="text-xs text-red-400/60 hover:text-red-400">Remove</button>
+      </div>`).join('')}
+      ${subjects.length === 0 ? '<p class="text-white/30 col-span-3 text-center py-12">No subjects yet. Click "Add Subject" to start!</p>' : ''}
+    </div>
+  </div>`;
+}
+function showAddSubject() { document.getElementById('add-subject-form').classList.toggle('hidden'); }
+async function addSubject() {
+  const name = document.getElementById('subj-name').value.trim();
+  if (!name) return;
+  if (recordCount >= 999) { toast('Record limit reached!'); return; }
+  const colors = ['#6366f1','#8b5cf6','#ec4899','#f59e0b','#10b981','#06b6d4'];
+  const btn = event.target; btn.disabled = true; btn.textContent = 'Saving...';
+  const r = await window.dataSdk.create({ type: 'subject', name, notes: document.getElementById('subj-notes').value, color: colors[Math.floor(Math.random()*colors.length)], status: '', subject: '', priority: '', due_date: '', category: '', completed: false, hours: 0, created_at: new Date().toISOString() });
+  btn.disabled = false; btn.textContent = 'Save Subject';
+  if (r.isOk) { toast('Subject added!'); document.getElementById('subj-name').value = ''; document.getElementById('subj-notes').value = ''; }
+  else toast('Error saving subject');
+}
 
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <div class="card-glass p-8 rounded-[2.5rem]">
-              <h3 class="font-bold text-xl mb-6 flex items-center gap-3"><i data-lucide="droplets" class="w-5 h-5 text-blue-400"></i> Hydration Tracker</h3>
-              <div class="flex gap-4 mb-8">
-                ${[1,2,3,4,5,6,7,8].map(i => `
-                  <button onclick="toast('Stay hydrated!')" class="w-full aspect-square rounded-2xl ${i <= 3 ? 'bg-blue-500 shadow-lg shadow-blue-500/20' : 'bg-white/5 border border-white/10'} transition-all"></button>
-                `).join('')}
-              </div>
-              <p class="text-center text-xs font-bold text-white/30 uppercase tracking-widest">3 of 8 glasses today</p>
-            </div>
+// Homework
+function renderHomework() {
+  const hw = getByType('homework');
+  const subjects = getByType('subject');
+  return `<div class="fade-in">
+    <div class="flex items-center justify-between mb-8">
+      <div><h1 class="text-2xl font-bold text-white">Homework</h1><p class="text-white/40 text-sm">${hw.filter(h=>!h.completed).length} pending</p></div>
+      <button class="btn-primary text-sm" onclick="document.getElementById('hw-form').classList.toggle('hidden')">+ Add Homework</button>
+    </div>
+    <div id="hw-form" class="hidden card-glass rounded-2xl p-6 mb-6">
+      <div class="grid md:grid-cols-4 gap-4">
+        <input id="hw-name" placeholder="Assignment name" class="w-full">
+        <select id="hw-subject" class="w-full"><option value="">Subject</option>${subjects.map(s=>`<option value="${s.name}">${s.name}</option>`).join('')}</select>
+        <input id="hw-due" type="date" class="w-full">
+        <button onclick="addHomework()" class="btn-primary">Add</button>
+      </div>
+    </div>
+    <div class="space-y-3">
+      ${hw.length === 0 ? '<p class="text-white/30 text-center py-12">No homework added yet.</p>' :
+      hw.sort((a,b) => (a.completed?1:0)-(b.completed?1:0)).map(h => `<div class="card-glass rounded-xl p-4 flex items-center gap-4">
+        <button onclick="toggleHw('${h.__backendId}', ${!h.completed})" class="w-5 h-5 rounded border ${h.completed ? 'bg-emerald-500 border-emerald-500' : 'border-white/20'} flex items-center justify-center shrink-0">${h.completed ? '<i data-lucide="check" class="w-3 h-3 text-white"></i>' : ''}</button>
+        <div class="flex-1 min-w-0"><div class="text-sm text-white ${h.completed ? 'line-through opacity-50' : ''}">${h.name}</div><div class="text-xs text-white/30">${h.subject || ''}${h.due_date ? ' • Due: '+h.due_date : ''}</div></div>
+        <button onclick="deleteRecord('${h.__backendId}')" class="text-white/20 hover:text-red-400"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+      </div>`).join('')}
+    </div>
+  </div>`;
+}
+async function addHomework() {
+  const name = document.getElementById('hw-name').value.trim();
+  if (!name) return;
+  if (recordCount >= 999) { toast('Limit reached!'); return; }
+  const r = await window.dataSdk.create({ type: 'homework', name, subject: document.getElementById('hw-subject').value, due_date: document.getElementById('hw-due').value, priority: 'medium', status: 'pending', color: '', notes: '', category: '', completed: false, hours: 0, created_at: new Date().toISOString() });
+  if (r.isOk) { toast('Homework added!'); document.getElementById('hw-name').value = ''; }
+}
+async function toggleHw(id, completed) {
+  const item = allData.find(d => d.__backendId === id);
+  if (item) { const r = await window.dataSdk.update({...item, completed}); if(r.isOk) toast(completed ? 'Done! 🎉' : 'Unmarked'); }
+}
 
-            <div class="card-glass p-8 rounded-[2.5rem]">
-              <h3 class="font-bold text-xl mb-6 flex items-center gap-3"><i data-lucide="moon" class="w-5 h-5 text-indigo-400"></i> Sleep Quality</h3>
-              <div class="flex items-end gap-2 h-32 mb-4 px-2">
-                ${[40, 70, 60, 90, 85, 30, 80].map(h => `<div class="flex-1 bg-indigo-500/20 rounded-t-lg transition-all hover:bg-indigo-500" style="height: ${h}%"></div>`).join('')}
-              </div>
-              <p class="text-center text-sm font-bold">Average: 7.2 Hours</p>
-            </div>
+// Exams
+function renderExams() {
+  const exams = getByType('exam');
+  const subjects = getByType('subject');
+  return `<div class="fade-in">
+    <div class="flex items-center justify-between mb-8">
+      <div><h1 class="text-2xl font-bold text-white">Exams</h1><p class="text-white/40 text-sm">${exams.length} upcoming</p></div>
+      <button class="btn-primary text-sm" onclick="document.getElementById('exam-form').classList.toggle('hidden')">+ Add Exam</button>
+    </div>
+    <div id="exam-form" class="hidden card-glass rounded-2xl p-6 mb-6">
+      <div class="grid md:grid-cols-4 gap-4">
+        <input id="exam-name" placeholder="Exam name" class="w-full">
+        <select id="exam-subject" class="w-full"><option value="">Subject</option>${subjects.map(s=>`<option value="${s.name}">${s.name}</option>`).join('')}</select>
+        <input id="exam-date" type="date" class="w-full">
+        <button onclick="addExam()" class="btn-primary">Add</button>
+      </div>
+    </div>
+    <div class="grid md:grid-cols-2 gap-4">
+      ${exams.length === 0 ? '<p class="text-white/30 col-span-2 text-center py-12">No exams scheduled.</p>' :
+      exams.map(e => {
+        const days = e.due_date ? Math.max(0, Math.ceil((new Date(e.due_date) - new Date()) / 86400000)) : '?';
+        return `<div class="card-glass rounded-2xl p-5">
+          <div class="flex items-center justify-between mb-2"><h3 class="text-white font-semibold">${e.name}</h3><button onclick="deleteRecord('${e.__backendId}')" class="text-white/20 hover:text-red-400"><i data-lucide="trash-2" class="w-4 h-4"></i></button></div>
+          <p class="text-white/40 text-sm mb-3">${e.subject || 'General'}${e.due_date ? ' • '+e.due_date : ''}</p>
+          <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/10 text-amber-300 text-xs font-semibold"><i data-lucide="clock" class="w-3 h-3"></i> ${days} days left</div>
+        </div>`;
+      }).join('')}
+    </div>
+  </div>`;
+}
+async function addExam() {
+  const name = document.getElementById('exam-name').value.trim();
+  if (!name) return;
+  if (recordCount >= 999) { toast('Limit reached!'); return; }
+  const r = await window.dataSdk.create({ type: 'exam', name, subject: document.getElementById('exam-subject').value, due_date: document.getElementById('exam-date').value, priority: 'high', status: 'upcoming', color: '', notes: '', category: '', completed: false, hours: 0, created_at: new Date().toISOString() });
+  if (r.isOk) { toast('Exam added!'); document.getElementById('exam-name').value = ''; }
+}
+
+// Timetable
+function renderTimetable() {
+  const days = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  const slots = getByType('timetable');
+  return `<div class="fade-in">
+    <div class="flex items-center justify-between mb-8">
+      <h1 class="text-2xl font-bold text-white">Timetable</h1>
+      <button class="btn-primary text-sm" onclick="document.getElementById('tt-form').classList.toggle('hidden')">+ Add Slot</button>
+    </div>
+    <div id="tt-form" class="hidden card-glass rounded-2xl p-6 mb-6">
+      <div class="grid md:grid-cols-5 gap-4">
+        <select id="tt-day" class="w-full">${days.map(d=>`<option value="${d}">${d}</option>`).join('')}</select>
+        <input id="tt-time" placeholder="e.g. 9:00 AM" class="w-full">
+        <input id="tt-subj" placeholder="Subject" class="w-full">
+        <input id="tt-notes" placeholder="Room / Teacher" class="w-full">
+        <button onclick="addSlot()" class="btn-primary">Add</button>
+      </div>
+    </div>
+    <div class="grid md:grid-cols-3 lg:grid-cols-6 gap-4">
+      ${days.map(day => {
+        const daySlots = slots.filter(s => s.category === day).sort((a,b) => (a.notes||'').localeCompare(b.notes||''));
+        return `<div class="card-glass rounded-2xl p-4">
+          <h3 class="text-white font-semibold text-sm mb-3">${day.slice(0,3)}</h3>
+          <div class="space-y-2">
+            ${daySlots.length === 0 ? '<p class="text-white/20 text-xs">No classes</p>' :
+            daySlots.map(s => `<div class="p-2 rounded-lg bg-indigo-500/10 border border-indigo-500/20">
+              <div class="text-xs text-white/80 font-medium">${s.name}</div>
+              <div class="text-xs text-white/30">${s.subject || ''}</div>
+            </div>`).join('')}
           </div>
+        </div>`;
+      }).join('')}
+    </div>
+  </div>`;
+}
+async function addSlot() {
+  const subj = document.getElementById('tt-subj').value.trim();
+  if (!subj) return;
+  if (recordCount >= 999) { toast('Limit reached!'); return; }
+  const r = await window.dataSdk.create({ type: 'timetable', name: subj, subject: document.getElementById('tt-time').value, due_date: '', priority: '', status: '', color: '', notes: document.getElementById('tt-notes').value, category: document.getElementById('tt-day').value, completed: false, hours: 0, created_at: new Date().toISOString() });
+  if (r.isOk) { toast('Slot added!'); document.getElementById('tt-subj').value = ''; }
+}
 
-          <div class="card-glass p-8 rounded-[2.5rem] bg-pink-500/5">
-            <h3 class="font-bold text-xl mb-6">Mental Wellness Journal</h3>
-            <textarea placeholder="How are you feeling about your progress today?" class="w-full h-32 bg-white/5 border border-white/10 rounded-2xl p-6 outline-none focus:border-pink-500/50 transition"></textarea>
-            <div class="mt-6 flex justify-end">
-              <button class="btn-primary px-8 py-3 rounded-xl font-bold">Save Reflection</button>
-            </div>
-          </div>
-        </div>
-      `;
-    }
+// Activities
+function renderActivities() {
+  const acts = getByType('activity');
+  const categories = ['Sports','Music','Dance','Debate','MUN','Olympiads','Coding','Art','Theatre','Writing','Volunteering','Other'];
+  return `<div class="fade-in">
+    <div class="flex items-center justify-between mb-8">
+      <div><h1 class="text-2xl font-bold text-white">Extracurriculars</h1><p class="text-white/40 text-sm">${acts.length} activities tracked</p></div>
+      <button class="btn-primary text-sm" onclick="document.getElementById('act-form').classList.toggle('hidden')">+ Add Activity</button>
+    </div>
+    <div id="act-form" class="hidden card-glass rounded-2xl p-6 mb-6">
+      <div class="grid md:grid-cols-4 gap-4">
+        <input id="act-name" placeholder="Activity name" class="w-full">
+        <select id="act-cat" class="w-full">${categories.map(c=>`<option value="${c}">${c}</option>`).join('')}</select>
+        <input id="act-notes" placeholder="Notes / Achievement" class="w-full">
+        <button onclick="addActivity()" class="btn-primary">Add</button>
+      </div>
+    </div>
+    <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+      ${acts.length === 0 ? '<p class="text-white/30 col-span-3 text-center py-12">No activities added yet.</p>' :
+      acts.map(a => `<div class="card-glass rounded-2xl p-5">
+        <div class="flex items-center justify-between mb-2"><span class="badge bg-purple-500/20 text-purple-300">${a.category || 'Other'}</span><button onclick="deleteRecord('${a.__backendId}')" class="text-white/20 hover:text-red-400"><i data-lucide="trash-2" class="w-4 h-4"></i></button></div>
+        <h3 class="text-white font-semibold mt-2">${a.name}</h3>
+        <p class="text-white/30 text-xs mt-1">${a.notes || ''}</p>
+      </div>`).join('')}
+    </div>
+  </div>`;
+}
+async function addActivity() {
+  const name = document.getElementById('act-name').value.trim();
+  if (!name) return;
+  if (recordCount >= 999) { toast('Limit reached!'); return; }
+  const r = await window.dataSdk.create({ type: 'activity', name, subject: '', due_date: '', priority: '', status: '', color: '', notes: document.getElementById('act-notes').value, category: document.getElementById('act-cat').value, completed: false, hours: 0, created_at: new Date().toISOString() });
+  if (r.isOk) { toast('Activity added!'); document.getElementById('act-name').value = ''; }
+}
 
-    // --- ANALYTICS ---
-    function renderAnalytics() {
-      return `
-        <div class="max-w-5xl mx-auto space-y-10">
-          <header class="flex justify-between items-center">
-            <h1 class="text-4xl font-black tracking-tight">Analytics Engine</h1>
-            <select class="bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-sm font-bold">
-              <option>Last 7 Days</option>
-              <option>Last 30 Days</option>
-            </select>
-          </header>
+// Analytics
+function renderAnalytics() {
+  const hw = getByType('homework');
+  const done = hw.filter(h => h.completed).length;
+  const total = hw.length;
+  const pct = total ? Math.round((done/total)*100) : 0;
+  const subjects = getByType('subject');
+  return `<div class="fade-in">
+    <h1 class="text-2xl font-bold text-white mb-8">Study Analytics</h1>
+    <div class="grid md:grid-cols-3 gap-6 mb-8">
+      <div class="stat-card rounded-2xl p-6 text-center">
+        <div class="text-4xl font-bold text-white mb-2">${pct}%</div>
+        <div class="text-white/40 text-sm">Completion Rate</div>
+        <div class="w-full h-2 rounded-full bg-white/10 mt-4"><div class="h-2 rounded-full bg-gradient-to-r from-indigo-500 to-purple-500" style="width:${pct}%"></div></div>
+      </div>
+      <div class="stat-card rounded-2xl p-6 text-center">
+        <div class="text-4xl font-bold text-white mb-2">${done}</div>
+        <div class="text-white/40 text-sm">Tasks Completed</div>
+      </div>
+      <div class="stat-card rounded-2xl p-6 text-center">
+        <div class="text-4xl font-bold text-white mb-2">${subjects.length}</div>
+        <div class="text-white/40 text-sm">Active Subjects</div>
+      </div>
+    </div>
+    <div class="card-glass rounded-2xl p-6">
+      <h3 class="text-white font-semibold mb-4">Subject Breakdown</h3>
+      <div class="space-y-3">
+        ${subjects.length === 0 ? '<p class="text-white/30 text-sm">Add subjects to see breakdown.</p>' :
+        subjects.map(s => {
+          const sHw = hw.filter(h => h.subject === s.name);
+          const sDone = sHw.filter(h => h.completed).length;
+          const sPct = sHw.length ? Math.round((sDone/sHw.length)*100) : 0;
+          return `<div class="flex items-center gap-4"><div class="w-3 h-3 rounded-full" style="background:${s.color||'#6366f1'}"></div><span class="text-sm text-white/80 w-32">${s.name}</span><div class="flex-1 h-2 rounded-full bg-white/10"><div class="h-2 rounded-full" style="width:${sPct}%;background:${s.color||'#6366f1'}"></div></div><span class="text-xs text-white/40 w-12 text-right">${sPct}%</span></div>`;
+        }).join('')}
+      </div>
+    </div>
+  </div>`;
+}
 
-          <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
-            ${['Study Hours', 'Tasks Done', 'Avg. Focus', 'Milestones'].map((l, i) => `
-              <div class="card-glass p-6 rounded-3xl text-center">
-                <p class="text-[10px] font-black uppercase text-white/30 tracking-widest mb-2">${l}</p>
-                <p class="text-3xl font-black">${[24, 18, '82%', 5][i]}</p>
-              </div>
-            `).join('')}
-          </div>
+// Wellness
+function renderWellness() {
+  const moods = getByType('mood');
+  const emojis = ['😢','😟','😐','😊','🤩'];
+  return `<div class="fade-in">
+    <h1 class="text-2xl font-bold text-white mb-2">Wellness Hub</h1>
+    <p class="text-white/40 text-sm mb-8">Track your mood and wellbeing</p>
+    <div class="card-glass rounded-2xl p-6 mb-6">
+      <h3 class="text-white font-semibold mb-4">How are you feeling today?</h3>
+      <div class="flex gap-4 mb-4">${emojis.map((e,i) => `<button onclick="logMood(${i+1},'${e}')" class="text-3xl hover:scale-125 transition">${e}</button>`).join('')}</div>
+    </div>
+    <div class="card-glass rounded-2xl p-6">
+      <h3 class="text-white font-semibold mb-4">Mood History</h3>
+      <div class="space-y-2">
+        ${moods.length === 0 ? '<p class="text-white/30 text-sm">Log your first mood above!</p>' :
+        moods.slice(-10).reverse().map(m => `<div class="flex items-center gap-3 py-2 border-b border-white/5">
+          <span class="text-xl">${m.notes || '😊'}</span>
+          <span class="text-sm text-white/40">${new Date(m.created_at).toLocaleDateString()}</span>
+        </div>`).join('')}
+      </div>
+    </div>
+  </div>`;
+}
+async function logMood(level, emoji) {
+  if (recordCount >= 999) { toast('Limit reached!'); return; }
+  const r = await window.dataSdk.create({ type: 'mood', name: 'Mood Log', subject: '', due_date: '', priority: '', status: '', color: '', notes: emoji, category: '', completed: false, hours: level, created_at: new Date().toISOString() });
+  if (r.isOk) toast('Mood logged! ' + emoji);
+}
 
-          <div class="card-glass p-10 rounded-[3rem] h-96 flex flex-col">
-            <h3 class="font-bold text-xl mb-8">Productivity Heatmap</h3>
-            <div class="flex-1 flex gap-2 items-end px-4">
-              ${Array.from({length: 24}).map(() => `
-                <div class="flex-1 bg-indigo-500/10 rounded-full hover:bg-indigo-500 transition-all cursor-pointer" style="height: ${Math.random()*100}%"></div>
-              `).join('')}
-            </div>
-            <div class="flex justify-between mt-4 text-[10px] font-bold text-white/20 px-2">
-              <span>00:00</span><span>12:00</span><span>23:59</span>
-            </div>
-          </div>
-        </div>
-      `;
-    }
+// Delete
+async function deleteRecord(id) {
+  const item = allData.find(d => d.__backendId === id);
+  if (!item) return;
+  const r = await window.dataSdk.delete(item);
+  if (r.isOk) toast('Deleted');
+}
 
-    // --- HELPER UTILS ---
-    function toast(msg) {
-      const t = document.createElement('div');
-      t.className = 'fixed bottom-10 right-10 z-[999] bg-indigo-600 px-6 py-4 rounded-2xl shadow-2xl animate-in slide-in-from-right fade-in font-bold flex items-center gap-3';
-      t.innerHTML = `<i data-lucide="info" class="w-5 h-5"></i> ${msg}`;
-      document.body.appendChild(t);
-      lucide.createIcons();
-      setTimeout(() => { t.classList.add('animate-out', 'fade-out', 'slide-out-to-right'); setTimeout(()=>t.remove(), 500); }, 3000);
-    }
-
-    async function toggleHw(id, completed) {
-      const item = allData.find(d => d.__backendId === id);
-      if (item) {
-        await window.dataSdk.update({...item, completed});
-        toast(completed ? "Task Crushed! +50 XP" : "Task restored");
-      }
-    }
-
-    // Include other renderers from base code (Academics, Timetable, etc.) with the new UI styles...
-  </script>
-</body>
+// FAQ
+const faqs = [
+  { q: 'Is Acadence really free?', a: 'Yes! The core features are completely free forever.' },
+  { q: 'Does it work offline?', a: 'Yes, all data persists locally and syncs when online.' },
+  { q: 'Can I use it on mobile?', a: 'Absolutely — Acadence is fully responsive.' },
+  { q: 'Is my data private?', a: 'Your data is stored securely and never shared.' }
+];
+document.addEventListener('DOMContentLoaded', () => {
+  const faqList = document.getElementById('faq-list');
+  if (faqList) {
+    faqList.innerHTML = faqs.map((f,i) => `<div class="card-glass rounded-xl p-5 cursor-pointer" onclick="this.querySelector('.faq-a').classList.toggle('hidden')">
+      <div class="flex items-center justify-between"><span class="text-white font-medium text-sm">${f.q}</span><i data-lucide="chevron-down" class="w-4 h-4 text-white/30"></i></div>
+      <p class="faq-a hidden text-white/40 text-sm mt-3">${f.a}</p>
+    </div>`).join('');
+  }
+  lucide.createIcons();
+});
+</script>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9f482e22a5cfa7dc',t:'MTc3NzU2OTI0MC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
