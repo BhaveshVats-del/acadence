@@ -28,15 +28,17 @@
         
         @keyframes fade-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         .animate-in { animation: fade-in 0.6s ease-out forwards; }
+
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 10px; }
     </style>
 </head>
-<body x-data="acadenceOS()">
+<body x-data="acadenceOS()" x-init="init()">
 
     <!-- 1. PREMIUM ONBOARDING WIZARD -->
     <template x-if="!onboarded">
         <div class="fixed inset-0 z-[200] bg-black flex items-center justify-center p-6">
             <div class="max-w-xl w-full glass p-12 rounded-[3rem] animate-in">
-                <!-- Progress Header -->
                 <div class="flex justify-between items-center mb-12">
                     <span class="text-[10px] font-bold tracking-[0.4em] text-purple-400 uppercase">Step <span x-text="step"></span> of 4</span>
                     <div class="flex gap-2">
@@ -50,8 +52,8 @@
                 <div x-show="step === 1">
                     <h2 class="text-4xl font-serif italic mb-2">Welcome to Acadence</h2>
                     <p class="text-gray-500 text-sm mb-8">Let's build your personalized academic identity.</p>
-                    <input x-model="user.name" type="text" placeholder="Full Name" class="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 outline-none focus:border-purple-500 mb-4">
-                    <input x-model="user.school" type="text" placeholder="School Name" class="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 outline-none focus:border-purple-500">
+                    <input x-model="user.name" type="text" placeholder="Full Name" class="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 outline-none focus:border-purple-500 mb-4 text-white">
+                    <input x-model="user.school" type="text" placeholder="School Name" class="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 outline-none focus:border-purple-500 text-white">
                 </div>
 
                 <!-- Step 2: Curriculum -->
@@ -59,13 +61,15 @@
                     <h2 class="text-4xl font-serif italic mb-2">Your Academics</h2>
                     <p class="text-gray-500 text-sm mb-8">What are we conquering this term?</p>
                     <div class="grid grid-cols-2 gap-4">
-                        <select x-model="user.grade" class="bg-white/5 border border-white/10 rounded-2xl px-6 py-4 outline-none">
-                            <option value="">Select Grade</option>
-                            <option>Class 9</option><option>Class 10</option><option>Class 11</option><option>Class 12</option>
+                        <select x-model="user.grade" class="bg-white/5 border border-white/10 rounded-2xl px-6 py-4 outline-none text-white">
+                            <option value="" class="bg-black">Select Grade</option>
+                            <option class="bg-black">Class 9</option><option class="bg-black">Class 10</option>
+                            <option class="bg-black">Class 11</option><option class="bg-black">Class 12</option>
                         </select>
-                        <select x-model="user.board" class="bg-white/5 border border-white/10 rounded-2xl px-6 py-4 outline-none">
-                            <option value="">Curriculum</option>
-                            <option>CBSE</option><option>ICSE</option><option>IB</option><option>IGCSE</option>
+                        <select x-model="user.board" class="bg-white/5 border border-white/10 rounded-2xl px-6 py-4 outline-none text-white">
+                            <option value="" class="bg-black">Curriculum</option>
+                            <option class="bg-black">CBSE</option><option class="bg-black">ICSE</option>
+                            <option class="bg-black">IB</option><option class="bg-black">IGCSE</option>
                         </select>
                     </div>
                 </div>
@@ -78,9 +82,9 @@
                         <div class="flex items-center justify-between glass p-4 rounded-2xl">
                             <span class="text-xs text-gray-400">School Hours</span>
                             <div class="flex gap-2">
-                                <input x-model="user.schoolStart" type="time" class="bg-transparent text-xs">
+                                <input x-model="user.schoolStart" type="time" class="bg-transparent text-xs text-white">
                                 <span class="text-gray-600">to</span>
-                                <input x-model="user.schoolEnd" type="time" class="bg-transparent text-xs">
+                                <input x-model="user.schoolEnd" type="time" class="bg-transparent text-xs text-white">
                             </div>
                         </div>
                     </div>
@@ -102,7 +106,7 @@
                     </div>
                 </div>
 
-                <!-- Navigation Buttons -->
+                <!-- Navigation -->
                 <div class="flex justify-between mt-12 pt-8 border-t border-white/5">
                     <button x-show="step > 1" @click="step--" class="text-gray-500 text-xs font-bold uppercase tracking-widest">Back</button>
                     <span x-show="step === 1"></span>
@@ -116,11 +120,8 @@
 
     <!-- 2. MAIN SYSTEM INTERFACE -->
     <div x-show="onboarded" x-cloak class="flex h-screen overflow-hidden">
-        
-        <!-- SIDEBAR -->
         <aside class="w-64 border-r border-white/5 bg-black/40 flex flex-col p-6">
             <h1 class="text-2xl font-serif italic mb-12 px-2">Acadence</h1>
-            
             <nav class="space-y-2 flex-1">
                 <button @click="activeTab = 'dashboard'" :class="activeTab === 'dashboard' ? 'sidebar-item active' : 'sidebar-item'" class="w-full flex items-center gap-4 px-4 py-3 rounded-xl text-gray-500 hover:text-white transition-all">
                     <i data-lucide="layout-dashboard" class="w-4 h-4"></i>
@@ -134,27 +135,20 @@
                     <i data-lucide="calendar" class="w-4 h-4"></i>
                     <span class="text-sm font-medium">Auto-Timetable</span>
                 </button>
-                <button @click="activeTab = 'extra'" :class="activeTab === 'extra' ? 'sidebar-item active' : 'sidebar-item'" class="w-full flex items-center gap-4 px-4 py-3 rounded-xl text-gray-500 hover:text-white transition-all">
-                    <i data-lucide="activity" class="w-4 h-4"></i>
-                    <span class="text-sm font-medium">Extracurriculars</span>
-                </button>
             </nav>
 
-            <!-- Profile Widget -->
             <div class="glass p-4 rounded-2xl mt-auto">
                 <div class="flex items-center gap-3">
                     <div class="w-10 h-10 rounded-full bg-purple-500/20 border border-purple-500/30 flex items-center justify-center text-purple-400 font-bold" x-text="user.name ? user.name[0] : 'U'"></div>
-                    <div>
-                        <p class="text-xs font-bold truncate max-w-[120px]" x-text="user.name"></p>
+                    <div class="overflow-hidden">
+                        <p class="text-xs font-bold truncate" x-text="user.name"></p>
                         <p class="text-[9px] text-gray-500 uppercase tracking-widest" x-text="user.grade"></p>
                     </div>
                 </div>
             </div>
         </aside>
 
-        <!-- MAIN VIEWPORT -->
         <main class="flex-1 overflow-y-auto bg-[radial-gradient(circle_at_top_right,rgba(167,139,250,0.03),transparent)]">
-            
             <header class="px-12 py-8 flex justify-between items-center sticky top-0 bg-black/60 backdrop-blur-md z-50">
                 <div class="flex items-center gap-6">
                     <h2 class="text-2xl font-serif italic" x-text="getTabTitle()"></h2>
@@ -167,15 +161,14 @@
                 
                 <div class="flex items-center gap-4">
                     <span class="text-xs font-mono text-gray-500" x-text="currentTime"></span>
-                    <button @click="openSubjectModal()" class="bg-white text-black p-2 rounded-full hover:bg-purple-400 transition-all">
+                    <button @click="showSubjectModal = true; activeTab = 'subjects'" class="bg-white text-black p-2 rounded-full hover:bg-purple-400 transition-all">
                         <i data-lucide="plus" class="w-4 h-4"></i>
                     </button>
                 </div>
             </header>
 
             <div class="px-12 pb-20">
-                
-                <!-- TAB: KANBAN ACADEMIC HUB -->
+                <!-- TAB: KANBAN -->
                 <div x-show="activeTab === 'subjects'" class="animate-in">
                     <div class="flex gap-8 overflow-x-auto pb-8 kanban-scroll" style="min-height: 70vh;">
                         <template x-for="(subject, index) in subjects" :key="index">
@@ -196,7 +189,7 @@
                                         <div class="glass p-4 rounded-2xl hover:bg-white/[0.04] transition-all cursor-pointer">
                                             <div class="flex justify-between items-start mb-2">
                                                 <span class="text-[9px] px-2 py-0.5 rounded-full border border-white/10 uppercase" x-text="task.type"></span>
-                                                <input type="checkbox" x-model="task.done" class="rounded-full bg-transparent border-white/20">
+                                                <input type="checkbox" x-model="task.done" @change="save()" class="rounded-full bg-transparent border-white/20">
                                             </div>
                                             <p class="text-xs font-medium" :class="task.done ? 'line-through text-gray-600' : ''" x-text="task.title"></p>
                                         </div>
@@ -209,9 +202,9 @@
                             </div>
                         </template>
 
-                        <!-- Add Subject Placeholder -->
-                        <button @click="openSubjectModal()" class="flex-shrink-0 w-80 border-2 border-dashed border-white/5 rounded-[2.5rem] flex flex-col items-center justify-center text-gray-700 hover:text-gray-400 hover:border-white/10 transition-all">
-                            <i data-lucide="folder-plus" class="w-10 h-10 mb-4"></i>
+                        <!-- INITIALIZE SUBJECT BUTTON -->
+                        <button @click="showSubjectModal = true" class="flex-shrink-0 w-80 border-2 border-dashed border-white/5 rounded-[2.5rem] flex flex-col items-center justify-center text-gray-700 hover:text-purple-400 hover:border-purple-500/30 transition-all group" style="min-height: 400px;">
+                            <i data-lucide="folder-plus" class="w-10 h-10 mb-4 group-hover:scale-110 transition-transform"></i>
                             <span class="text-[10px] font-bold uppercase tracking-[0.4em]">Initialize Subject</span>
                         </button>
                     </div>
@@ -220,28 +213,15 @@
                 <!-- TAB: DASHBOARD -->
                 <div x-show="activeTab === 'dashboard'" class="animate-in space-y-12">
                     <div class="grid grid-cols-12 gap-8">
-                        <!-- Main Stats -->
                         <div class="col-span-8 glass p-10 rounded-[3rem] relative overflow-hidden group">
                             <div class="absolute top-0 right-0 w-64 h-64 bg-purple-600/5 blur-[100px] rounded-full"></div>
-                            <h3 class="text-5xl font-serif italic mb-8">Ready to evolve, <span x-text="user.name.split(' ')[0]"></span>?</h3>
-                            
+                            <h3 class="text-5xl font-serif italic mb-8">Ready to evolve, <span x-text="user.name ? user.name.split(' ')[0] : 'Student'"></span>?</h3>
                             <div class="grid grid-cols-3 gap-8 pt-8 border-t border-white/5">
-                                <div>
-                                    <p class="text-[10px] text-gray-500 uppercase tracking-widest mb-2">Academic Completion</p>
-                                    <p class="text-3xl font-light">74.2%</p>
-                                </div>
-                                <div>
-                                    <p class="text-[10px] text-gray-500 uppercase tracking-widest mb-2">Weekly Goal</p>
-                                    <p class="text-3xl font-light">12 / 20</p>
-                                </div>
-                                <div>
-                                    <p class="text-[10px] text-gray-500 uppercase tracking-widest mb-2">XP Rank</p>
-                                    <p class="text-3xl font-light text-purple-400">Elite IV</p>
-                                </div>
+                                <div><p class="text-[10px] text-gray-500 uppercase tracking-widest mb-2">Tasks Found</p><p class="text-3xl font-light" x-text="subjects.reduce((acc, s) => acc + s.tasks.length, 0)"></p></div>
+                                <div><p class="text-[10px] text-gray-500 uppercase tracking-widest mb-2">Subjects</p><p class="text-3xl font-light" x-text="subjects.length"></p></div>
+                                <div><p class="text-[10px] text-gray-500 uppercase tracking-widest mb-2">XP Rank</p><p class="text-3xl font-light text-purple-400">Elite IV</p></div>
                             </div>
                         </div>
-
-                        <!-- Focus Timer Widget -->
                         <div class="col-span-4 glass p-10 rounded-[3rem] text-center flex flex-col justify-center">
                             <i data-lucide="timer" class="w-8 h-8 mx-auto mb-4 text-purple-400"></i>
                             <p class="text-4xl font-mono mb-4">25:00</p>
@@ -249,52 +229,28 @@
                         </div>
                     </div>
 
-                    <!-- Analytics Section -->
                     <div class="grid grid-cols-3 gap-8">
                         <div class="glass p-8 rounded-[2rem]">
-                            <h5 class="text-xs font-bold uppercase tracking-widest mb-6">Study Distribution</h5>
+                            <h5 class="text-xs font-bold uppercase tracking-widest mb-6">Subject Distribution</h5>
                             <canvas id="studyChart"></canvas>
-                        </div>
-                        <div class="glass p-8 rounded-[2rem] col-span-2">
-                            <h5 class="text-xs font-bold uppercase tracking-widest mb-6">Extracurricular Roadmap</h5>
-                            <div class="space-y-4">
-                                <div class="flex justify-between items-center glass p-4 rounded-xl border-l-4 border-cyan-500">
-                                    <div>
-                                        <p class="text-sm font-bold">Hackathon Preparation</p>
-                                        <p class="text-[10px] text-gray-500">Next milestone: Prototype V1</p>
-                                    </div>
-                                    <i data-lucide="code" class="w-5 h-5 text-cyan-500"></i>
-                                </div>
-                                <div class="flex justify-between items-center glass p-4 rounded-xl border-l-4 border-amber-500">
-                                    <div>
-                                        <p class="text-sm font-bold">MUN Conference</p>
-                                        <p class="text-[10px] text-gray-500">Position paper due in 4 days</p>
-                                    </div>
-                                    <i data-lucide="megaphone" class="w-5 h-5 text-amber-500"></i>
-                                </div>
-                            </div>
                         </div>
                     </div>
                 </div>
-
             </div>
         </main>
     </div>
 
-    <!-- 3. MODAL: ADD SUBJECT -->
+    <!-- MODAL: ADD SUBJECT -->
     <template x-if="showSubjectModal">
         <div class="fixed inset-0 z-[300] bg-black/80 backdrop-blur-sm flex items-center justify-center p-6">
             <div class="max-w-md w-full glass p-10 rounded-[3rem] animate-in" @click.away="showSubjectModal = false">
                 <h3 class="text-2xl font-serif italic mb-8">Initialize Subject</h3>
-                <input x-model="newSubject.name" type="text" placeholder="Subject Name (e.g. Physics)" class="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 outline-none focus:border-purple-500 mb-6">
-                
-                <p class="text-[10px] uppercase font-bold text-gray-500 mb-4">Choose Signature Color</p>
+                <input x-model="newSubject.name" type="text" placeholder="Subject Name (e.g. Physics)" class="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 outline-none focus:border-purple-500 mb-6 text-white">
                 <div class="flex gap-3 mb-8">
                     <template x-for="color in ['#a78bfa', '#f87171', '#4ade80', '#60a5fa', '#fbbf24', '#f472b6']">
                         <button @click="newSubject.color = color" :class="newSubject.color === color ? 'scale-125 border-white' : 'border-transparent'" class="w-8 h-8 rounded-full border-2 transition-all" :style="'background-color:' + color"></button>
                     </template>
                 </div>
-
                 <div class="flex gap-4">
                     <button @click="showSubjectModal = false" class="flex-1 py-4 text-gray-500 text-[10px] font-bold uppercase tracking-widest">Cancel</button>
                     <button @click="createSubject()" class="flex-1 py-4 bg-white text-black rounded-2xl text-[10px] font-bold uppercase tracking-widest hover:bg-purple-400">Deploy</button>
@@ -312,36 +268,33 @@
                 streak: 12,
                 currentTime: '',
                 showSubjectModal: false,
-
-                user: {
-                    name: '', school: '', grade: '', board: '',
-                    schoolStart: '08:00', schoolEnd: '14:30', theme: 'oled'
-                },
-
+                user: { name: '', school: '', grade: '', board: '', schoolStart: '08:00', schoolEnd: '14:30', theme: 'oled' },
                 newSubject: { name: '', color: '#a78bfa' },
                 subjects: [],
 
                 init() {
-                    // Load Data from LocalStorage
                     const savedData = localStorage.getItem('acadence_v3_data');
                     if (savedData) {
                         const parsed = JSON.parse(savedData);
-                        this.user = parsed.user;
-                        this.subjects = parsed.subjects;
+                        this.user = parsed.user || this.user;
+                        this.subjects = parsed.subjects || [];
                         this.onboarded = true;
                     }
 
                     this.updateTime();
                     setInterval(() => this.updateTime(), 1000);
                     
-                    this.$watch('activeTab', () => {
-                        setTimeout(() => {
+                    this.$watch('activeTab', (val) => {
+                        this.$nextTick(() => {
                             lucide.createIcons();
-                            if(this.activeTab === 'dashboard') this.initCharts();
-                        }, 100);
+                            if(val === 'dashboard') this.initCharts();
+                        });
                     });
 
-                    lucide.createIcons();
+                    this.$nextTick(() => {
+                        lucide.createIcons();
+                        if(this.onboarded && this.activeTab === 'dashboard') this.initCharts();
+                    });
                 },
 
                 updateTime() {
@@ -352,78 +305,62 @@
                     if (!this.user.name) return alert("Please enter your name.");
                     this.onboarded = true;
                     this.save();
-                    setTimeout(() => lucide.createIcons(), 100);
-                },
-
-                openSubjectModal() {
-                    this.activeTab = 'subjects';
-                    this.showSubjectModal = true;
+                    this.$nextTick(() => lucide.createIcons());
                 },
 
                 createSubject() {
                     if (!this.newSubject.name) return;
-                    this.subjects.push({
-                        name: this.newSubject.name,
-                        color: this.newSubject.color,
-                        tasks: []
-                    });
+                    this.subjects.push({ name: this.newSubject.name, color: this.newSubject.color, tasks: [] });
                     this.newSubject = { name: '', color: '#a78bfa' };
                     this.showSubjectModal = false;
                     this.save();
-                    setTimeout(() => lucide.createIcons(), 50);
+                    this.$nextTick(() => lucide.createIcons());
                 },
 
                 deleteSubject(index) {
-                    if (confirm("De-initialize this subject and all its data?")) {
+                    if (confirm("Delete this subject?")) {
                         this.subjects.splice(index, 1);
                         this.save();
                     }
                 },
 
                 addTask(subIndex) {
-                    const title = prompt("Define Task Objective:");
+                    const title = prompt("Task Objective:");
                     if (title) {
-                        this.subjects[subIndex].tasks.push({
-                            title,
-                            type: 'homework',
-                            done: false
-                        });
+                        this.subjects[subIndex].tasks.push({ title, type: 'mission', done: false });
                         this.save();
                     }
                 },
 
                 save() {
-                    localStorage.setItem('acadence_v3_data', JSON.stringify({
-                        user: this.user,
-                        subjects: this.subjects
-                    }));
+                    localStorage.setItem('acadence_v3_data', JSON.stringify({ user: this.user, subjects: this.subjects }));
                 },
 
                 getTabTitle() {
-                    return this.activeTab.charAt(0).toUpperCase() + this.activeTab.slice(1);
+                    return this.activeTab === 'subjects' ? 'Academic Hub' : this.activeTab.charAt(0).toUpperCase() + this.activeTab.slice(1);
                 },
 
                 initCharts() {
                     const ctx = document.getElementById('studyChart');
                     if (!ctx) return;
-                    
-                    // Destroy existing chart if it exists to prevent memory leaks
                     if (window.myChart) window.myChart.destroy();
+                    
+                    const hasData = this.subjects.length > 0;
 
                     window.myChart = new Chart(ctx, {
                         type: 'doughnut',
                         data: {
-                            labels: this.subjects.map(s => s.name),
+                            labels: hasData ? this.subjects.map(s => s.name) : ['No Data'],
                             datasets: [{
-                                data: this.subjects.map(s => s.tasks.length + 1),
-                                backgroundColor: this.subjects.map(s => s.color),
+                                data: hasData ? this.subjects.map(s => s.tasks.length + 1) : [1],
+                                backgroundColor: hasData ? this.subjects.map(s => s.color) : ['rgba(255,255,255,0.05)'],
                                 borderWidth: 0,
-                                borderRadius: 5
+                                borderRadius: 10
                             }]
                         },
                         options: {
                             plugins: { legend: { display: false } },
-                            cutout: '70%'
+                            cutout: '80%'
                         }
                     });
                 }
