@@ -3,198 +3,186 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Acadence | Student Life OS</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <title>Acadence | Premium Student OS</title>
+    
+    <!-- High-End Typography -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=Playfair+Display:ital,wght@1,600&display=swap" rel="stylesheet">
+    
+    <!-- Tailwind for Layout -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
+
     <style>
+        /* Base Premium Styles - Hardcoded for Stability */
+        :root {
+            --bg-color: #050505;
+            --accent: #a78bfa;
+        }
+
         body {
-            background-color: #050505;
+            background-color: var(--bg-color);
             color: #ffffff;
             font-family: 'Inter', sans-serif;
+            margin: 0;
+            height: 100vh;
+            display: flex;
             overflow: hidden;
         }
 
+        /* The "Glass" Effect */
         .glass {
             background: rgba(255, 255, 255, 0.03);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
             border: 1px solid rgba(255, 255, 255, 0.08);
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
-        .premium-gradient {
-            background: radial-gradient(circle at top right, rgba(139, 92, 246, 0.15), transparent 40%),
-                        radial-gradient(circle at bottom left, rgba(59, 130, 246, 0.1), transparent 40%);
-        }
-
-        .task-card:hover {
-            background: rgba(255, 255, 255, 0.06);
-            transform: translateY(-2px);
-            border-color: rgba(139, 92, 246, 0.3);
-        }
-
-        .sidebar-item {
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        .premium-bg {
+            background: radial-gradient(circle at 70% 0%, rgba(139, 92, 246, 0.15), transparent 50%),
+                        radial-gradient(circle at 0% 100%, rgba(59, 130, 246, 0.1), transparent 50%);
         }
 
         .sidebar-item:hover {
             background: rgba(255, 255, 255, 0.05);
-            padding-left: 1.75rem;
+            transform: translateX(8px);
         }
 
-        /* Custom Scrollbar */
-        ::-webkit-scrollbar { width: 4px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.1); border-radius: 10px; }
-
-        .shimmer {
-            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.05), transparent);
-            background-size: 200% 100%;
-            animation: shimmer 3s infinite;
+        .shimmer-text {
+            background: linear-gradient(90deg, #fff, #666, #fff);
+            background-size: 200% auto;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: shine 5s linear infinite;
         }
 
-        @keyframes shimmer {
-            0% { background-position: -200% 0; }
-            100% { background-position: 200% 0; }
+        @keyframes shine {
+            to { background-position: 200% center; }
         }
+
+        /* Prevent Layout Shift */
+        main { flex: 1; overflow-y: auto; position: relative; }
+        aside { width: 280px; border-right: 1px solid rgba(255,255,255,0.05); }
     </style>
 </head>
-<body class="premium-gradient min-h-screen flex">
+<body class="premium-bg">
 
-    <aside class="w-72 border-r border-white/5 bg-black/40 backdrop-blur-2xl flex flex-col z-10">
+    <!-- SIDEBAR -->
+    <aside class="flex flex-col bg-black/40 backdrop-blur-3xl">
         <div class="p-10">
-            <h1 class="text-3xl font-serif italic tracking-tighter text-white">Acadence</h1>
-            <p class="text-[10px] uppercase tracking-[0.4em] text-gray-500 mt-2">Student Life OS</p>
+            <h1 class="text-3xl font-serif italic tracking-tighter shimmer-text">Acadence</h1>
+            <p class="text-[9px] uppercase tracking-[0.4em] text-gray-500 mt-2 font-semibold">Peak Performance</p>
         </div>
 
-        <nav class="flex-1 space-y-2 px-4">
-            <div class="sidebar-item flex items-center gap-4 px-6 py-4 rounded-xl text-white bg-white/5 cursor-pointer">
+        <nav class="flex-1 px-4 space-y-1">
+            <div class="sidebar-item flex items-center gap-4 px-6 py-4 rounded-2xl text-white bg-white/5 cursor-pointer">
                 <i data-lucide="layout-grid" class="w-5 h-5"></i>
-                <span class="text-sm font-medium">Overview</span>
+                <span class="text-sm font-medium">Dashboard</span>
             </div>
-            <div class="sidebar-item flex items-center gap-4 px-6 py-4 rounded-xl text-gray-400 hover:text-white cursor-pointer">
+            <div class="sidebar-item flex items-center gap-4 px-6 py-4 rounded-2xl text-gray-400 hover:text-white cursor-pointer group">
                 <i data-lucide="book-open" class="w-5 h-5"></i>
-                <span class="text-sm font-medium">Homework</span>
+                <span class="text-sm font-medium">Academic Vault</span>
             </div>
-            <div class="sidebar-item flex items-center gap-4 px-6 py-4 rounded-xl text-gray-400 hover:text-white cursor-pointer">
-                <i data-lucide="calendar" class="w-5 h-5"></i>
-                <span class="text-sm font-medium">Timetable</span>
-            </div>
-            <div class="sidebar-item flex items-center gap-4 px-6 py-4 rounded-xl text-gray-400 hover:text-white cursor-pointer">
+            <div class="sidebar-item flex items-center gap-4 px-6 py-4 rounded-2xl text-gray-400 hover:text-white cursor-pointer">
                 <i data-lucide="zap" class="w-5 h-5"></i>
                 <span class="text-sm font-medium">Study Streaks</span>
             </div>
         </nav>
 
-        <div class="p-8 border-t border-white/5">
-            <div class="glass p-4 rounded-2xl flex items-center gap-3">
-                <div class="w-10 h-10 rounded-full bg-gradient-to-tr from-purple-500 to-blue-500 flex items-center justify-center font-bold text-xs">BV</div>
-                <div>
-                    <p class="text-xs font-semibold">Bhavesh Vats</p>
-                    <p class="text-[10px] text-gray-500">Class 9 Specialist</p>
-                </div>
+        <div class="p-8">
+            <div class="glass p-4 rounded-2xl border-purple-500/20 bg-purple-500/5">
+                <p class="text-[10px] uppercase tracking-widest text-purple-400 font-bold mb-1">Status</p>
+                <p class="text-xs text-white">Elite Member</p>
             </div>
         </div>
     </aside>
 
-    <main class="flex-1 overflow-y-auto relative">
-        <header class="sticky top-0 z-20 px-12 py-8 flex justify-between items-center bg-[#050505]/50 backdrop-blur-md">
+    <!-- MAIN INTERFACE -->
+    <main class="p-12">
+        <!-- Header -->
+        <header class="flex justify-between items-end mb-12">
             <div>
-                <h2 class="text-gray-400 text-sm tracking-wide" id="greeting-time">Good Evening,</h2>
-                <h3 class="text-2xl font-light">Focus on your <span class="text-purple-400 underline decoration-1 underline-offset-8">Physics Lab</span></h3>
+                <p id="greeting" class="text-gray-500 text-sm tracking-wide mb-1 italic font-serif">Syncing...</p>
+                <h2 class="text-4xl font-light tracking-tight">The <span class="text-purple-400">Master</span> Schedule</h2>
             </div>
-            <div class="flex gap-4">
-                <button class="glass px-5 py-2.5 rounded-full text-xs font-medium hover:bg-white/10 transition-all">New Task</button>
-                <div class="glass w-10 h-10 rounded-full flex items-center justify-center cursor-pointer">
-                    <i data-lucide="bell" class="w-4 h-4 text-gray-400"></i>
-                </div>
-            </div>
+            <button class="glass px-8 py-3 rounded-full text-xs font-bold uppercase tracking-widest hover:bg-white hover:text-black transition-all">
+                Add Entry
+            </button>
         </header>
 
-        <section class="px-12 py-6 grid grid-cols-12 gap-8">
-            
-            <div class="col-span-4 glass rounded-[2rem] p-8 shimmer">
-                <div class="flex justify-between items-start mb-6">
-                    <p class="text-[10px] uppercase tracking-widest text-gray-500 font-bold">Study Streak</p>
-                    <i data-lucide="flame" class="text-orange-500 w-5 h-5"></i>
+        <!-- Top Row Stats -->
+        <div class="grid grid-cols-12 gap-6 mb-10">
+            <div class="col-span-4 glass rounded-[2.5rem] p-8">
+                <div class="flex justify-between items-center mb-6">
+                    <i data-lucide="flame" class="text-orange-500 w-6 h-6"></i>
+                    <span class="text-[10px] font-bold text-gray-500 tracking-tighter uppercase">Daily Consistency</span>
                 </div>
-                <h4 class="text-5xl font-light tracking-tighter">14 <span class="text-xl text-gray-600 italic font-serif">days</span></h4>
-                <div class="mt-8 h-1 w-full bg-white/5 rounded-full">
-                    <div class="h-full bg-orange-500 w-3/4 rounded-full shadow-[0_0_15px_rgba(249,115,22,0.4)]"></div>
-                </div>
+                <h3 class="text-6xl font-light tracking-tighter">14</h3>
+                <p class="text-xs text-gray-500 mt-2">Day study streak active</p>
             </div>
 
-            <div class="col-span-8 glass rounded-[2rem] p-8 relative overflow-hidden group">
-                <div class="relative z-10 flex justify-between">
+            <div class="col-span-8 glass rounded-[2.5rem] p-8 flex flex-col justify-center">
+                <div class="flex justify-between items-end">
                     <div>
-                        <p class="text-[10px] uppercase tracking-widest text-purple-400 font-bold mb-2">Next Milestone</p>
-                        <h4 class="text-2xl font-light italic font-serif">Final Term Assessment</h4>
+                        <p class="text-[10px] font-bold text-blue-400 uppercase tracking-widest mb-2">Upcoming Exam</p>
+                        <h4 class="text-2xl font-light italic font-serif">Advanced Astrophysics</h4>
                     </div>
                     <div class="text-right">
-                        <p class="text-4xl font-mono tracking-tighter">08:14:22:05</p>
-                        <p class="text-[10px] text-gray-500 mt-1 uppercase">Days : Hrs : Min : Sec</p>
-                    </div>
-                </div>
-                <div class="absolute top-0 right-0 w-64 h-64 bg-purple-600/10 blur-[100px] rounded-full group-hover:bg-purple-600/20 transition-all duration-700"></div>
-            </div>
-
-            <div class="col-span-12 mt-4">
-                <div class="flex justify-between items-end mb-8">
-                    <h5 class="text-xl font-light">Pending Priorities</h5>
-                    <p class="text-sm text-gray-500 underline cursor-pointer">View Archive</p>
-                </div>
-
-                <div class="grid grid-cols-3 gap-6">
-                    <div class="task-card glass rounded-3xl p-7 transition-all cursor-pointer">
-                        <div class="flex justify-between items-center mb-6">
-                            <span class="px-3 py-1 rounded-full bg-purple-500/10 text-purple-400 text-[9px] font-bold uppercase tracking-widest">Chemistry</span>
-                            <i data-lucide="more-horizontal" class="w-4 h-4 text-gray-600"></i>
-                        </div>
-                        <h6 class="text-lg font-light mb-1">Periodic Table Project</h6>
-                        <p class="text-xs text-gray-500">Research & Design</p>
-                        <div class="mt-10 flex justify-between items-center text-[10px] text-gray-400 uppercase tracking-widest border-t border-white/5 pt-4">
-                            <span>Due Today</span>
-                            <span class="text-white">High Priority</span>
-                        </div>
-                    </div>
-
-                    <div class="task-card glass rounded-3xl p-7 transition-all cursor-pointer">
-                        <div class="flex justify-between items-center mb-6">
-                            <span class="px-3 py-1 rounded-full bg-blue-500/10 text-blue-400 text-[9px] font-bold uppercase tracking-widest">Mathematics</span>
-                            <i data-lucide="more-horizontal" class="w-4 h-4 text-gray-600"></i>
-                        </div>
-                        <h6 class="text-lg font-light mb-1">Calculus Worksheet</h6>
-                        <p class="text-xs text-gray-500">Pages 142 - 150</p>
-                        <div class="mt-10 flex justify-between items-center text-[10px] text-gray-400 uppercase tracking-widest border-t border-white/5 pt-4">
-                            <span>2 Days Left</span>
-                            <span class="text-white italic">Balanced</span>
-                        </div>
-                    </div>
-
-                    <div class="task-card glass rounded-3xl p-7 transition-all cursor-pointer border-dashed">
-                        <div class="h-full flex flex-col items-center justify-center min-h-[160px]">
-                            <div class="w-10 h-10 rounded-full border border-white/10 flex items-center justify-center mb-4">
-                                <i data-lucide="plus" class="w-5 h-5 text-gray-500"></i>
-                            </div>
-                            <p class="text-xs text-gray-500 uppercase tracking-widest">Add New Assignment</p>
-                        </div>
+                        <p class="text-3xl font-mono tracking-tighter">04:12:55</p>
+                        <p class="text-[9px] text-gray-600 uppercase">Days remaining</p>
                     </div>
                 </div>
             </div>
+        </div>
 
-        </section>
+        <!-- Task List -->
+        <h4 class="text-xs font-bold uppercase tracking-[0.3em] text-gray-600 mb-6">Current Focus Tasks</h4>
+        <div class="grid grid-cols-3 gap-6">
+            <!-- Luxury Task Card -->
+            <div class="glass rounded-3xl p-8 hover:border-purple-500/40 cursor-pointer group">
+                <div class="w-2 h-2 rounded-full bg-purple-500 mb-6 shadow-[0_0_10px_#a855f7]"></div>
+                <h5 class="text-xl font-light mb-2">Thesis Draft</h5>
+                <p class="text-xs text-gray-500 leading-relaxed mb-8">Refine the introduction and methodology sections for the final review.</p>
+                <div class="flex justify-between items-center pt-6 border-t border-white/5">
+                    <span class="text-[10px] text-gray-400">Priority: High</span>
+                    <i data-lucide="arrow-right" class="w-4 h-4 text-gray-600 group-hover:text-white transition-colors"></i>
+                </div>
+            </div>
+
+            <div class="glass rounded-3xl p-8 hover:border-blue-500/40 cursor-pointer group">
+                <div class="w-2 h-2 rounded-full bg-blue-500 mb-6 shadow-[0_0_10px_#3b82f6]"></div>
+                <h5 class="text-xl font-light mb-2">Math Problem Set</h5>
+                <p class="text-xs text-gray-500 leading-relaxed mb-8">Complete exercises 1.4 through 2.1 on multivariate calculus.</p>
+                <div class="flex justify-between items-center pt-6 border-t border-white/5">
+                    <span class="text-[10px] text-gray-400">Due: Tomorrow</span>
+                    <i data-lucide="arrow-right" class="w-4 h-4 text-gray-600 group-hover:text-white transition-colors"></i>
+                </div>
+            </div>
+
+            <!-- Add Task Visual -->
+            <div class="border border-dashed border-white/10 rounded-3xl p-8 flex flex-col items-center justify-center opacity-40 hover:opacity-100 transition-opacity cursor-pointer">
+                <i data-lucide="plus-circle" class="w-8 h-8 mb-2"></i>
+                <span class="text-[10px] uppercase tracking-widest">New Goal</span>
+            </div>
+        </div>
     </main>
 
     <script>
-        // Initialize Lucide Icons
+        // Initialize Icons
         lucide.createIcons();
 
-        // Dynamic Greeting
-        const hour = new Date().getHours();
-        const greeting = document.getElementById('greeting-time');
-        if (hour < 12) greeting.innerText = 'Good Morning,';
-        else if (hour < 17) greeting.innerText = 'Good Afternoon,';
-        else greeting.innerText = 'Good Evening,';
+        // Premium Greeting Logic
+        const setGreeting = () => {
+            const hour = new Date().getHours();
+            const g = document.getElementById('greeting');
+            if (hour < 12) g.innerText = "Good Morning, Scholar";
+            else if (hour < 18) g.innerText = "Good Afternoon, Scholar";
+            else g.innerText = "Good Evening, Scholar";
+        };
+
+        setGreeting();
     </script>
 </body>
 </html>
