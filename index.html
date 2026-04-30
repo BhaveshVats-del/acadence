@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Acadence | Student Life OS</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=Playfair+Display:ital,wght@1,600&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        body {
+            background-color: #050505;
+            color: #ffffff;
+            font-family: 'Inter', sans-serif;
+            overflow: hidden;
+        }
+
+        .glass {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .premium-gradient {
+            background: radial-gradient(circle at top right, rgba(139, 92, 246, 0.15), transparent 40%),
+                        radial-gradient(circle at bottom left, rgba(59, 130, 246, 0.1), transparent 40%);
+        }
+
+        .task-card:hover {
+            background: rgba(255, 255, 255, 0.06);
+            transform: translateY(-2px);
+            border-color: rgba(139, 92, 246, 0.3);
+        }
+
+        .sidebar-item {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .sidebar-item:hover {
+            background: rgba(255, 255, 255, 0.05);
+            padding-left: 1.75rem;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.1); border-radius: 10px; }
+
+        .shimmer {
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.05), transparent);
+            background-size: 200% 100%;
+            animation: shimmer 3s infinite;
+        }
+
+        @keyframes shimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+    </style>
+</head>
+<body class="premium-gradient min-h-screen flex">
+
+    <aside class="w-72 border-r border-white/5 bg-black/40 backdrop-blur-2xl flex flex-col z-10">
+        <div class="p-10">
+            <h1 class="text-3xl font-serif italic tracking-tighter text-white">Acadence</h1>
+            <p class="text-[10px] uppercase tracking-[0.4em] text-gray-500 mt-2">Student Life OS</p>
+        </div>
+
+        <nav class="flex-1 space-y-2 px-4">
+            <div class="sidebar-item flex items-center gap-4 px-6 py-4 rounded-xl text-white bg-white/5 cursor-pointer">
+                <i data-lucide="layout-grid" class="w-5 h-5"></i>
+                <span class="text-sm font-medium">Overview</span>
+            </div>
+            <div class="sidebar-item flex items-center gap-4 px-6 py-4 rounded-xl text-gray-400 hover:text-white cursor-pointer">
+                <i data-lucide="book-open" class="w-5 h-5"></i>
+                <span class="text-sm font-medium">Homework</span>
+            </div>
+            <div class="sidebar-item flex items-center gap-4 px-6 py-4 rounded-xl text-gray-400 hover:text-white cursor-pointer">
+                <i data-lucide="calendar" class="w-5 h-5"></i>
+                <span class="text-sm font-medium">Timetable</span>
+            </div>
+            <div class="sidebar-item flex items-center gap-4 px-6 py-4 rounded-xl text-gray-400 hover:text-white cursor-pointer">
+                <i data-lucide="zap" class="w-5 h-5"></i>
+                <span class="text-sm font-medium">Study Streaks</span>
+            </div>
+        </nav>
+
+        <div class="p-8 border-t border-white/5">
+            <div class="glass p-4 rounded-2xl flex items-center gap-3">
+                <div class="w-10 h-10 rounded-full bg-gradient-to-tr from-purple-500 to-blue-500 flex items-center justify-center font-bold text-xs">BV</div>
+                <div>
+                    <p class="text-xs font-semibold">Bhavesh Vats</p>
+                    <p class="text-[10px] text-gray-500">Class 9 Specialist</p>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <main class="flex-1 overflow-y-auto relative">
+        <header class="sticky top-0 z-20 px-12 py-8 flex justify-between items-center bg-[#050505]/50 backdrop-blur-md">
+            <div>
+                <h2 class="text-gray-400 text-sm tracking-wide" id="greeting-time">Good Evening,</h2>
+                <h3 class="text-2xl font-light">Focus on your <span class="text-purple-400 underline decoration-1 underline-offset-8">Physics Lab</span></h3>
+            </div>
+            <div class="flex gap-4">
+                <button class="glass px-5 py-2.5 rounded-full text-xs font-medium hover:bg-white/10 transition-all">New Task</button>
+                <div class="glass w-10 h-10 rounded-full flex items-center justify-center cursor-pointer">
+                    <i data-lucide="bell" class="w-4 h-4 text-gray-400"></i>
+                </div>
+            </div>
+        </header>
+
+        <section class="px-12 py-6 grid grid-cols-12 gap-8">
+            
+            <div class="col-span-4 glass rounded-[2rem] p-8 shimmer">
+                <div class="flex justify-between items-start mb-6">
+                    <p class="text-[10px] uppercase tracking-widest text-gray-500 font-bold">Study Streak</p>
+                    <i data-lucide="flame" class="text-orange-500 w-5 h-5"></i>
+                </div>
+                <h4 class="text-5xl font-light tracking-tighter">14 <span class="text-xl text-gray-600 italic font-serif">days</span></h4>
+                <div class="mt-8 h-1 w-full bg-white/5 rounded-full">
+                    <div class="h-full bg-orange-500 w-3/4 rounded-full shadow-[0_0_15px_rgba(249,115,22,0.4)]"></div>
+                </div>
+            </div>
+
+            <div class="col-span-8 glass rounded-[2rem] p-8 relative overflow-hidden group">
+                <div class="relative z-10 flex justify-between">
+                    <div>
+                        <p class="text-[10px] uppercase tracking-widest text-purple-400 font-bold mb-2">Next Milestone</p>
+                        <h4 class="text-2xl font-light italic font-serif">Final Term Assessment</h4>
+                    </div>
+                    <div class="text-right">
+                        <p class="text-4xl font-mono tracking-tighter">08:14:22:05</p>
+                        <p class="text-[10px] text-gray-500 mt-1 uppercase">Days : Hrs : Min : Sec</p>
+                    </div>
+                </div>
+                <div class="absolute top-0 right-0 w-64 h-64 bg-purple-600/10 blur-[100px] rounded-full group-hover:bg-purple-600/20 transition-all duration-700"></div>
+            </div>
+
+            <div class="col-span-12 mt-4">
+                <div class="flex justify-between items-end mb-8">
+                    <h5 class="text-xl font-light">Pending Priorities</h5>
+                    <p class="text-sm text-gray-500 underline cursor-pointer">View Archive</p>
+                </div>
+
+                <div class="grid grid-cols-3 gap-6">
+                    <div class="task-card glass rounded-3xl p-7 transition-all cursor-pointer">
+                        <div class="flex justify-between items-center mb-6">
+                            <span class="px-3 py-1 rounded-full bg-purple-500/10 text-purple-400 text-[9px] font-bold uppercase tracking-widest">Chemistry</span>
+                            <i data-lucide="more-horizontal" class="w-4 h-4 text-gray-600"></i>
+                        </div>
+                        <h6 class="text-lg font-light mb-1">Periodic Table Project</h6>
+                        <p class="text-xs text-gray-500">Research & Design</p>
+                        <div class="mt-10 flex justify-between items-center text-[10px] text-gray-400 uppercase tracking-widest border-t border-white/5 pt-4">
+                            <span>Due Today</span>
+                            <span class="text-white">High Priority</span>
+                        </div>
+                    </div>
+
+                    <div class="task-card glass rounded-3xl p-7 transition-all cursor-pointer">
+                        <div class="flex justify-between items-center mb-6">
+                            <span class="px-3 py-1 rounded-full bg-blue-500/10 text-blue-400 text-[9px] font-bold uppercase tracking-widest">Mathematics</span>
+                            <i data-lucide="more-horizontal" class="w-4 h-4 text-gray-600"></i>
+                        </div>
+                        <h6 class="text-lg font-light mb-1">Calculus Worksheet</h6>
+                        <p class="text-xs text-gray-500">Pages 142 - 150</p>
+                        <div class="mt-10 flex justify-between items-center text-[10px] text-gray-400 uppercase tracking-widest border-t border-white/5 pt-4">
+                            <span>2 Days Left</span>
+                            <span class="text-white italic">Balanced</span>
+                        </div>
+                    </div>
+
+                    <div class="task-card glass rounded-3xl p-7 transition-all cursor-pointer border-dashed">
+                        <div class="h-full flex flex-col items-center justify-center min-h-[160px]">
+                            <div class="w-10 h-10 rounded-full border border-white/10 flex items-center justify-center mb-4">
+                                <i data-lucide="plus" class="w-5 h-5 text-gray-500"></i>
+                            </div>
+                            <p class="text-xs text-gray-500 uppercase tracking-widest">Add New Assignment</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </section>
+    </main>
+
+    <script>
+        // Initialize Lucide Icons
+        lucide.createIcons();
+
+        // Dynamic Greeting
+        const hour = new Date().getHours();
+        const greeting = document.getElementById('greeting-time');
+        if (hour < 12) greeting.innerText = 'Good Morning,';
+        else if (hour < 17) greeting.innerText = 'Good Afternoon,';
+        else greeting.innerText = 'Good Evening,';
+    </script>
+</body>
+</html>
