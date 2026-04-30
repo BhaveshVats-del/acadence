@@ -3,175 +3,179 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Acadence | Adaptive AI</title>
+    <title>Acadence | Mission Control</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=Playfair+Display:ital,wght@1,500&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
-        body {
-            background-color: #000000;
-            color: #ffffff;
-            font-family: 'Inter', sans-serif;
-            height: 100vh;
-            overflow: hidden;
-        }
-        .glass-panel {
-            background: rgba(255, 255, 255, 0.02);
-            backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.05);
-        }
-        .input-premium {
-            background: transparent;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
-            transition: border-color 0.4s;
-        }
-        .input-premium:focus {
-            outline: none;
-            border-color: #a78bfa;
-        }
-        .chat-bubble {
-            animation: slideIn 0.6s cubic-bezier(0.16, 1, 0.3, 1);
-        }
-        @keyframes slideIn {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        .hidden-step { display: none; }
+        :root { --accent: #a78bfa; }
+        body { background-color: #000000; color: #ffffff; font-family: 'Inter', sans-serif; height: 100vh; overflow: hidden; }
+        .glass { background: rgba(255, 255, 255, 0.02); backdrop-filter: blur(25px); border: 1px solid rgba(255, 255, 255, 0.05); }
+        .glow-purple { box-shadow: 0 0 40px -10px rgba(167, 139, 250, 0.2); }
+        .input-premium { background: transparent; border-bottom: 1px solid rgba(255, 255, 255, 0.1); outline: none; transition: 0.4s; }
+        .input-premium:focus { border-color: var(--accent); }
+        .attendance-btn { background: linear-gradient(135deg, #1e1e1e, #0a0a0a); border: 1px solid rgba(255,255,255,0.1); }
+        .attendance-btn:active { transform: scale(0.95); }
+        .hidden-section { display: none; }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+        .ticker-pulse { animation: pulse 2s infinite; }
     </style>
 </head>
-<body class="flex items-center justify-center p-6">
+<body class="flex items-center justify-center p-4">
 
-    <div class="w-full max-w-4xl h-[85vh] glass-panel rounded-[3rem] relative flex flex-col overflow-hidden shadow-2xl">
+    <!-- OVERLAY: ATTENDANCE GATEKEEPER -->
+    <div id="attendance-gate" class="fixed inset-0 z-50 bg-[#000000] flex flex-col items-center justify-center transition-all duration-700">
+        <div class="text-center">
+            <p class="text-xs uppercase tracking-[0.6em] text-gray-500 mb-4">Identity Verification</p>
+            <h2 class="text-5xl font-serif italic mb-12">Good Morning, Scholar.</h2>
+            <button onclick="markAttendance()" class="attendance-btn group px-12 py-12 rounded-full relative overflow-hidden">
+                <div class="absolute inset-0 bg-purple-500/10 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                <i data-lucide="fingerprint" class="w-12 h-12 text-purple-400"></i>
+            </button>
+            <p class="mt-8 text-gray-400 text-xs tracking-widest">TAP TO MARK ATTENDANCE & START STREAK</p>
+        </div>
+    </div>
+
+    <!-- MAIN DASHBOARD -->
+    <div id="dashboard" class="w-full max-w-6xl h-[90vh] glass rounded-[3rem] overflow-hidden flex flex-col opacity-0 transition-opacity duration-1000">
         
-        <!-- Header -->
-        <div class="p-10 flex justify-between items-center border-b border-white/5">
-            <h1 class="text-2xl font-serif italic tracking-tighter">Acadence</h1>
-            <div id="status-tag" class="px-4 py-1 rounded-full border border-purple-500/30 text-[10px] uppercase tracking-[0.2em] text-purple-400 font-bold">
-                AI Onboarding
+        <!-- Header: The Countdown Ticker -->
+        <div class="p-8 border-b border-white/5 flex justify-between items-center bg-white/[0.01]">
+            <div class="flex items-center gap-6">
+                <h1 class="text-2xl font-serif italic italic">Acadence</h1>
+                <div class="h-4 w-[1px] bg-white/10"></div>
+                <div class="flex items-center gap-3">
+                    <span class="w-2 h-2 rounded-full bg-orange-500 shadow-[0_0_10px_#f97316]"></span>
+                    <span class="text-[10px] font-bold tracking-widest text-gray-400">STREAK: <span id="streak-count">14</span> DAYS</span>
+                </div>
+            </div>
+
+            <div class="text-right">
+                <p class="text-[9px] uppercase tracking-[0.3em] text-purple-400 font-bold mb-1">Time to First Examination</p>
+                <div id="countdown-ticker" class="text-2xl font-mono tracking-tighter text-white">00D : 00H : 00M : 00S</div>
             </div>
         </div>
 
-        <!-- Conversational Area -->
-        <div id="chat-container" class="flex-1 overflow-y-auto p-12 space-y-12">
-            
-            <!-- Step 1: Intent -->
-            <div id="step-1" class="chat-bubble">
-                <p class="text-gray-500 text-sm font-serif italic mb-2 font-light">Welcome to the Elite Tier.</p>
-                <h2 class="text-3xl font-light mb-8">What brings you to Acadence today?</h2>
-                <div class="flex gap-4">
-                    <button onclick="handleIntent('exam')" class="px-8 py-4 rounded-2xl glass-panel hover:bg-white/10 transition-all text-sm tracking-wide">Final Exams</button>
-                    <button onclick="handleIntent('regular')" class="px-8 py-4 rounded-2xl glass-panel hover:bg-white/10 transition-all text-sm tracking-wide text-gray-400">Regular Studies</button>
+        <div class="flex flex-1 overflow-hidden">
+            <!-- Sidebar: Navigation -->
+            <aside class="w-20 border-r border-white/5 flex flex-col items-center py-10 gap-8">
+                <i data-lucide="layout-grid" class="w-5 h-5 text-purple-400 cursor-pointer"></i>
+                <i data-lucide="book" class="w-5 h-5 text-gray-500 hover:text-white cursor-pointer"></i>
+                <i data-lucide="award" class="w-5 h-5 text-gray-500 hover:text-white cursor-pointer"></i>
+                <div class="mt-auto">
+                    <i data-lucide="settings" class="w-5 h-5 text-gray-700"></i>
                 </div>
-            </div>
+            </aside>
 
-            <!-- Step 2: Subject Input (Regular) -->
-            <div id="step-regular" class="chat-bubble hidden-step">
-                <h2 class="text-3xl font-light mb-6">Which subjects define your curriculum?</h2>
-                <input type="text" id="subject-input" placeholder="e.g. Physics, Calculus, History..." class="input-premium w-full py-4 text-xl font-light">
-                <button onclick="generateTimetable('regular')" class="mt-8 text-purple-400 text-xs uppercase tracking-widest font-bold">Generate Routine →</button>
-            </div>
+            <!-- Main Scroll Area -->
+            <main class="flex-1 overflow-y-auto p-12">
+                <div id="setup-phase" class="">
+                    <h3 class="text-4xl font-light mb-2">Initialize your <span class="text-purple-400">Plan.</span></h3>
+                    <p class="text-gray-500 mb-12 text-sm font-light">Input your subjects and exam date to shard your syllabus.</p>
+                    
+                    <div class="grid grid-cols-2 gap-12">
+                        <div class="space-y-8">
+                            <div>
+                                <label class="text-[10px] uppercase tracking-widest text-gray-500 block mb-4">Exam Commencement</label>
+                                <input type="date" id="exam-date" class="input-premium w-full py-2 text-white">
+                            </div>
+                            <div>
+                                <label class="text-[10px] uppercase tracking-widest text-gray-500 block mb-4">Subjects & Topics (Separated by commas)</label>
+                                <textarea id="subjects-data" placeholder="Physics (Optics, Nuclei), Math (Calculus, Vectors)..." class="input-premium w-full h-32 py-2 text-sm resize-none"></textarea>
+                            </div>
+                            <button onclick="buildMasterSchedule()" class="bg-white text-black px-8 py-4 rounded-full text-[10px] font-bold uppercase tracking-[0.2em] hover:bg-purple-400 transition-colors">Generate Syllabus Shards</button>
+                        </div>
 
-            <!-- Step 3: Exam Days (Exam) -->
-            <div id="step-exam-days" class="chat-bubble hidden-step">
-                <h2 class="text-3xl font-light mb-6">How many days until the first paper?</h2>
-                <input type="number" id="exam-countdown-input" placeholder="Enter number of days" class="input-premium w-full py-4 text-xl font-light">
-                <button onclick="nextStep('step-exam-datesheet')" class="mt-8 text-purple-400 text-xs uppercase tracking-widest font-bold">Configure Datesheet →</button>
-            </div>
-
-            <!-- Step 4: Datesheet/Topics (Exam) -->
-            <div id="step-exam-datesheet" class="chat-bubble hidden-step">
-                <h2 class="text-3xl font-light mb-6">List your papers and sub-topics.</h2>
-                <p class="text-gray-500 text-sm mb-6">Our AI will shard these into a daily study flow.</p>
-                <textarea id="topics-input" placeholder="Math (Algebra, Trig), Science (Physics, Bio)..." class="input-premium w-full py-4 text-lg font-light h-32"></textarea>
-                <button onclick="generateTimetable('exam')" class="mt-8 bg-white text-black px-10 py-4 rounded-full text-xs uppercase tracking-widest font-bold">Prepare Master Schedule</button>
-            </div>
-
-            <!-- Step 5: The Result (Final Timetable) -->
-            <div id="final-result" class="chat-bubble hidden-step pb-20">
-                <div class="flex items-center gap-4 mb-8">
-                    <div class="h-[1px] flex-1 bg-white/10"></div>
-                    <span class="text-[10px] uppercase tracking-[0.4em] text-gray-600">Calculated Strategy</span>
-                    <div class="h-[1px] flex-1 bg-white/10"></div>
+                        <div class="glass rounded-[2rem] p-8 flex items-center justify-center border-dashed border-white/10">
+                            <p class="text-gray-600 text-xs italic">Intelligence Preview Window</p>
+                        </div>
+                    </div>
                 </div>
-                <div id="timetable-output" class="space-y-4">
-                    <!-- Dynamic Timetable will inject here -->
-                </div>
-            </div>
 
+                <!-- TABLE VIEW (Hidden until generated) -->
+                <div id="schedule-phase" class="hidden-section">
+                    <div class="flex justify-between items-end mb-10">
+                        <h3 class="text-3xl font-light italic font-serif">Daily Combat Schedule</h3>
+                        <p class="text-[10px] text-gray-500">OPTIMIZED FOR MAXIMUM RETENTION</p>
+                    </div>
+                    <div id="schedule-grid" class="grid grid-cols-1 gap-4">
+                        <!-- Dynamic schedule injected here -->
+                    </div>
+                </div>
+            </main>
         </div>
-
-        <!-- Decorative Blur -->
-        <div class="absolute bottom-0 right-0 w-64 h-64 bg-purple-600/5 blur-[100px] pointer-events-none"></div>
     </div>
 
     <script>
         lucide.createIcons();
 
-        function handleIntent(intent) {
-            document.getElementById('step-1').style.opacity = '0.3';
-            if(intent === 'exam') {
-                showStep('step-exam-days');
-            } else {
-                showStep('step-regular');
-            }
+        // 1. Attendance Logic
+        function markAttendance() {
+            const gate = document.getElementById('attendance-gate');
+            const dashboard = document.getElementById('dashboard');
+            
+            gate.style.opacity = '0';
+            gate.style.pointerEvents = 'none';
+            dashboard.style.opacity = '1';
+            
+            // Logic for a real app: localStorage.setItem('lastAttendance', new Date().toDateString());
         }
 
-        function showStep(stepId) {
-            const step = document.getElementById(stepId);
-            step.classList.remove('hidden-step');
-            step.scrollIntoView({ behavior: 'smooth' });
+        // 2. Countdown Logic
+        function startCountdown(targetDate) {
+            const ticker = document.getElementById('countdown-ticker');
+            
+            setInterval(() => {
+                const now = new Date().getTime();
+                const distance = new Date(targetDate).getTime() - now;
+
+                const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+                const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+                const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
+                ticker.innerHTML = `${days}D : ${hours}H : ${minutes}M : ${seconds}S`;
+            }, 1000);
         }
 
-        function nextStep(stepId) {
-            showStep(stepId);
-        }
+        // 3. Schedule Builder
+        function buildMasterSchedule() {
+            const dateInput = document.getElementById('exam-date').value;
+            const subInput = document.getElementById('subjects-data').value;
+            
+            if(!dateInput || !subInput) return alert("Please initialize all fields.");
 
-        function generateTimetable(type) {
-            const output = document.getElementById('timetable-output');
-            const container = document.getElementById('final-result');
-            container.classList.remove('hidden-step');
-            document.getElementById('status-tag').innerText = "Strategy Live";
-            document.getElementById('status-tag').classList.replace('text-purple-400', 'text-green-400');
+            startCountdown(dateInput);
+            
+            document.getElementById('setup-phase').classList.add('hidden-section');
+            const scheduleView = document.getElementById('schedule-phase');
+            scheduleView.classList.remove('hidden-section');
 
+            const grid = document.getElementById('schedule-grid');
+            const subjects = subInput.split(',');
+
+            const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
             let html = '';
-            if(type === 'exam') {
-                const days = document.getElementById('exam-countdown-input').value || 10;
-                html = `
-                    <div class="glass-panel p-8 rounded-[2rem] border-green-500/20">
-                        <p class="text-green-400 text-[10px] font-bold uppercase tracking-widest mb-4">CRITICAL PATH ACTIVATED</p>
-                        <div class="space-y-6">
-                            <div class="flex justify-between items-center">
-                                <span>Phase 1: Deep Revision</span>
-                                <span class="text-xs text-gray-500">Days 1-${Math.floor(days/2)}</span>
-                            </div>
-                            <div class="flex justify-between items-center">
-                                <span>Phase 2: Mock Testing</span>
-                                <span class="text-xs text-gray-500">Days ${Math.floor(days/2) + 1}-${days-1}</span>
-                            </div>
-                            <div class="flex justify-between items-center text-purple-400">
-                                <span>Final Refinement</span>
-                                <span class="text-xs">24 Hours Pre-Exam</span>
-                            </div>
-                        </div>
-                    </div>
-                `;
-            } else {
-                html = `
-                    <div class="grid grid-cols-2 gap-4">
-                        <div class="glass-panel p-6 rounded-2xl">
-                            <p class="text-[10px] text-gray-500 uppercase mb-2">Morning Session</p>
-                            <p class="text-lg font-light">Deep Work Focus</p>
-                        </div>
-                        <div class="glass-panel p-6 rounded-2xl">
-                            <p class="text-[10px] text-gray-500 uppercase mb-2">Evening Session</p>
-                            <p class="text-lg font-light">Active Recall & Review</p>
-                        </div>
-                    </div>
-                `;
-            }
 
-            output.innerHTML = html;
-            container.scrollIntoView({ behavior: 'smooth' });
+            days.forEach((day, index) => {
+                const subject = subjects[index % subjects.length].trim();
+                html += `
+                    <div class="glass p-6 rounded-3xl flex items-center justify-between hover:bg-white/[0.03] transition-all">
+                        <div class="flex items-center gap-8">
+                            <div class="text-xs font-bold text-purple-400 w-24 uppercase tracking-widest">${day}</div>
+                            <div>
+                                <p class="text-lg font-light text-white">${subject}</p>
+                                <p class="text-[10px] text-gray-500 uppercase tracking-widest mt-1">Focus Slot: 04:00 PM — 06:30 PM</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-4">
+                            <span class="px-3 py-1 rounded-full border border-white/10 text-[9px] text-gray-400">ACTIVE RECALL</span>
+                            <div class="w-2 h-2 rounded-full bg-green-500"></div>
+                        </div>
+                    </div>
+                `;
+            });
+            grid.innerHTML = html;
         }
     </script>
 </body>
