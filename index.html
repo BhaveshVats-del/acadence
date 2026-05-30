@@ -1,675 +1,1082 @@
-<!doctype html>
-<html lang="en" class="h-full">
- <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Acadence</title>
-  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
-  <script src="https://cdn.jsdelivr.net/npm/lucide@0.263.0/dist/umd/lucide.min.js"></script>
-  <script src="/_sdk/element_sdk.js"></script>
-  <script src="/_sdk/data_sdk.js"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
-  <script>
-tailwind.config = {
-  theme: {
-    extend: {
-      fontFamily: {
-        outfit: ['Outfit', 'sans-serif'],
-        mono: ['JetBrains Mono', 'monospace']
+import { useState, useEffect, useCallback, useMemo } from "react";
+
+const STORAGE_KEY = "acadence_data";
+
+const defaultData = {
+  subjects: [],
+  topics: [],
+  exams: [],
+  sessions: [],
+  progress: {},
+  streak: { current: 0, longest: 0, lastActiveDate: null, history: {} },
+  settings: { theme: "light", studyStart: "16:00", studyEnd: "21:00" },
+};
+
+function todayStr() {
+  const d = new Date();
+  return d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0") + "-" + String(d.getDate()).padStart(2,"0");
+}
+
+function yesterdayStr() {
+  const d = new Date(); d.setDate(d.getDate()-1);
+  return d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0") + "-" + String(d.getDate()).padStart(2,"0");
+}
+
+function computeStreak(streak) {
+  const today = todayStr();
+  const yesterday = yesterdayStr();
+  // If already active today, nothing to recalculate
+  if (streak.lastActiveDate === today) return streak;
+  // If last active was yesterday, streak is intact but today not yet done
+  if (streak.lastActiveDate === yesterday) return streak;
+  // If last active was before yesterday (or null), streak is broken
+  if (streak.lastActiveDate && streak.lastActiveDate < yesterday) {
+    return { ...streak, current: 0 };
+  }
+  return streak;
+}
+
+function recordActivityToday(streak) {
+  const today = todayStr();
+  const yesterday = yesterdayStr();
+  if (streak.lastActiveDate === today) return streak; // already recorded
+  const newCurrent = (streak.lastActiveDate === yesterday || streak.lastActiveDate === today)
+    ? streak.current + 1
+    : 1;
+  const newLongest = Math.max(streak.longest || 0, newCurrent);
+  return {
+    ...streak,
+    current: newCurrent,
+    longest: newLongest,
+    lastActiveDate: today,
+    history: { ...(streak.history||{}), [today]: true },
+  };
+}
+
+function loadData() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) return { ...defaultData, ...JSON.parse(raw) };
+  } catch {}
+  return defaultData;
+}
+
+function saveData(data) {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); } catch {}
+}
+
+const DAYS = ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"];
+const STATUS = { NOT_STARTED: "not_started", IN_PROGRESS: "in_progress", COMPLETED: "completed" };
+const STATUS_LABELS = { not_started: "Not Started", in_progress: "In Progress", completed: "Completed" };
+const STATUS_COLORS = {
+  not_started: "#888",
+  in_progress: "#f59e0b",
+  completed: "#10b981",
+};
+
+function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2); }
+
+function daysUntil(dateStr) {
+  const today = new Date(); today.setHours(0,0,0,0);
+  const d = new Date(dateStr); d.setHours(0,0,0,0);
+  return Math.ceil((d - today) / 86400000);
+}
+
+function formatTime(mins) {
+  const h = Math.floor(mins / 60), m = mins % 60;
+  if (h === 0) return `${m}m`;
+  if (m === 0) return `${h}h`;
+  return `${h}h ${m}m`;
+}
+
+function addMinutes(timeStr, mins) {
+  const [h, m] = timeStr.split(":").map(Number);
+  const total = h * 60 + m + mins;
+  const nh = Math.floor(total / 60) % 24, nm = total % 60;
+  return `${String(nh).padStart(2,"0")}:${String(nm).padStart(2,"0")}`;
+}
+
+function timeToMins(timeStr) {
+  const [h, m] = timeStr.split(":").map(Number);
+  return h * 60 + m;
+}
+
+function generateTimetable(subjects, topics, settings, dayName) {
+  const slots = [];
+  let current = settings.studyStart || "16:00";
+  const endMins = timeToMins(settings.studyEnd || "21:00");
+
+  const dayTopics = topics.filter(t => t.days && t.days.includes(dayName));
+  const subjectMap = {};
+  subjects.forEach(s => { subjectMap[s.id] = s; });
+
+  const scheduled = [];
+  dayTopics.forEach(topic => {
+    const subj = subjectMap[topic.subjectId];
+    if (subj) scheduled.push({ label: `${subj.name} – ${topic.name}`, duration: topic.duration || subj.duration || 60, type: "study", topicId: topic.id, subjectId: subj.id });
+  });
+
+  const scheduledSubjectIds = new Set(dayTopics.map(t => t.subjectId));
+  subjects.forEach(s => {
+    if (!scheduledSubjectIds.has(s.id)) {
+      scheduled.push({ label: s.name, duration: s.duration || 60, type: "study", subjectId: s.id });
+    }
+  });
+
+  subjects.forEach(s => {
+    if (s.revisionTime && s.revisionTime > 0) {
+      scheduled.push({ label: `${s.name} Revision`, duration: s.revisionTime, type: "revision", subjectId: s.id });
+    }
+  });
+
+  let breakCount = 0;
+  scheduled.forEach((item, i) => {
+    if (timeToMins(current) + item.duration > endMins) return;
+    slots.push({ ...item, start: current, end: addMinutes(current, item.duration) });
+    current = addMinutes(current, item.duration);
+    if (i < scheduled.length - 1 && breakCount < 3) {
+      const breakDur = 15;
+      if (timeToMins(current) + breakDur <= endMins) {
+        slots.push({ label: "Break", duration: breakDur, type: "break", start: current, end: addMinutes(current, breakDur) });
+        current = addMinutes(current, breakDur);
+        breakCount++;
       }
     }
-  }
-}
-</script>
-  <style>
-html, body { height: 100%; margin: 0; font-family: 'Outfit', sans-serif; }
-.app-wrapper { height: 100%; width: 100%; overflow: auto; }
-.gradient-bg { background: linear-gradient(135deg, #0f0f1a 0%, #1a1a2e 50%, #16213e 100%); }
-.card-glass { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); backdrop-filter: blur(10px); }
-.card-glass:hover { background: rgba(255,255,255,0.06); border-color: rgba(255,255,255,0.15); }
-.glow-accent { box-shadow: 0 0 30px rgba(99,102,241,0.15); }
-.sidebar-item { transition: all 0.2s; padding: 10px 16px; border-radius: 10px; cursor: pointer; display: flex; align-items: center; gap: 12px; color: rgba(255,255,255,0.6); }
-.sidebar-item:hover, .sidebar-item.active { background: rgba(99,102,241,0.15); color: #fff; }
-.sidebar-item.active { box-shadow: inset 3px 0 0 #6366f1; }
-.pulse-dot { animation: pulse 2s infinite; }
-@keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.4; } }
-@keyframes fadeIn { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
-.fade-in { animation: fadeIn 0.4s ease; }
-.stat-card { background: linear-gradient(135deg, rgba(99,102,241,0.1), rgba(139,92,246,0.05)); border: 1px solid rgba(99,102,241,0.2); }
-.progress-ring { transition: stroke-dashoffset 0.6s ease; }
-input, textarea, select { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: #fff; padding: 10px 14px; border-radius: 8px; outline: none; font-family: 'Outfit', sans-serif; }
-input:focus, textarea:focus, select:focus { border-color: #6366f1; box-shadow: 0 0 0 2px rgba(99,102,241,0.2); }
-input::placeholder, textarea::placeholder { color: rgba(255,255,255,0.3); }
-.btn-primary { background: linear-gradient(135deg, #6366f1, #8b5cf6); color: #fff; padding: 10px 20px; border-radius: 10px; font-weight: 600; cursor: pointer; border: none; transition: all 0.2s; }
-.btn-primary:hover { transform: translateY(-1px); box-shadow: 0 4px 20px rgba(99,102,241,0.4); }
-.btn-primary:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
-.btn-secondary { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: #fff; padding: 10px 20px; border-radius: 10px; font-weight: 500; cursor: pointer; transition: all 0.2s; }
-.btn-secondary:hover { background: rgba(255,255,255,0.1); }
-.badge { padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
-.toast { position: fixed; bottom: 24px; right: 24px; background: #1e1e2e; border: 1px solid rgba(99,102,241,0.3); color: #fff; padding: 14px 20px; border-radius: 12px; z-index: 9999; animation: fadeIn 0.3s ease; display: flex; align-items: center; gap: 10px; }
-.kanban-col { min-height: 200px; }
-.drag-over { border: 2px dashed #6366f1 !important; background: rgba(99,102,241,0.05) !important; }
-::-webkit-scrollbar { width: 6px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 3px; }
-</style>
-  <style>body { box-sizing: border-box; }</style>
- </head>
- <body class="h-full">
-  <div class="app-wrapper gradient-bg" id="app"><!-- Landing Page -->
-   <div id="landing-page" class="w-full h-full overflow-auto">
-    <nav class="flex items-center justify-between px-8 py-5 sticky top-0 z-50" style="background:rgba(15,15,26,0.9);backdrop-filter:blur(20px)">
-     <div class="flex items-center gap-3">
-      <div class="w-9 h-9 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center font-bold text-white text-sm">
-       A
-      </div><span class="text-white font-bold text-xl" id="brand-title">Acadence</span>
-     </div>
-     <div class="hidden md:flex items-center gap-8 text-sm text-white/60"><a href="#features" class="hover:text-white transition">Features</a> <a href="#pricing" class="hover:text-white transition">Pricing</a> <a href="#faq" class="hover:text-white transition">FAQ</a>
-     </div><button onclick="showApp()" class="btn-primary text-sm">Get Started Free</button>
-    </nav><!-- Hero -->
-    <section class="px-8 pt-20 pb-32 text-center max-w-5xl mx-auto fade-in">
-     <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 text-sm mb-8"><span class="pulse-dot w-2 h-2 rounded-full bg-indigo-400"></span> Now in Beta — Join 10,000+ students
-     </div>
-     <h1 class="text-4xl md:text-6xl lg:text-7xl font-900 text-white leading-tight mb-6" id="hero-title">Master School, Studies,<br>
-      and Life — <span class="bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent">All in One Place</span></h1>
-     <p class="text-lg md:text-xl text-white/50 max-w-2xl mx-auto mb-10">The ultimate productivity platform built exclusively for students. Manage academics, habits, goals, and growth in one beautiful workspace.</p>
-     <div class="flex flex-col sm:flex-row gap-4 justify-center"><button onclick="showApp()" class="btn-primary text-lg px-8 py-4">Start Free Today</button> <button class="btn-secondary text-lg px-8 py-4 flex items-center gap-2 justify-center"><i data-lucide="play-circle" class="w-5 h-5"></i> Watch Demo</button>
-     </div><!-- Stats -->
-     <div class="grid grid-cols-3 gap-6 mt-20 max-w-lg mx-auto">
-      <div>
-       <div class="text-2xl font-bold text-white">
-        10K+
-       </div>
-       <div class="text-xs text-white/40">
-        Students
-       </div>
-      </div>
-      <div>
-       <div class="text-2xl font-bold text-white">
-        4.9★
-       </div>
-       <div class="text-xs text-white/40">
-        Rating
-       </div>
-      </div>
-      <div>
-       <div class="text-2xl font-bold text-white">
-        50K+
-       </div>
-       <div class="text-xs text-white/40">
-        Tasks Done
-       </div>
-      </div>
-     </div>
-    </section><!-- Features -->
-    <section id="features" class="px-8 py-20 max-w-6xl mx-auto">
-     <h2 class="text-3xl md:text-4xl font-bold text-white text-center mb-4">Everything You Need</h2>
-     <p class="text-white/40 text-center mb-16 max-w-xl mx-auto">One platform to replace your scattered tools</p>
-     <div class="grid md:grid-cols-3 gap-6">
-      <div class="card-glass rounded-2xl p-6">
-       <div class="w-10 h-10 rounded-xl bg-indigo-500/20 flex items-center justify-center mb-4">
-        <i data-lucide="book-open" class="w-5 h-5 text-indigo-400"></i>
-       </div>
-       <h3 class="text-white font-semibold mb-2">Academic Manager</h3>
-       <p class="text-white/40 text-sm">Subjects, chapters, homework, exams — all organized beautifully.</p>
-      </div>
-      <div class="card-glass rounded-2xl p-6">
-       <div class="w-10 h-10 rounded-xl bg-purple-500/20 flex items-center justify-center mb-4">
-        <i data-lucide="calendar" class="w-5 h-5 text-purple-400"></i>
-       </div>
-       <h3 class="text-white font-semibold mb-2">Smart Timetable</h3>
-       <p class="text-white/40 text-sm">Auto-generate or manually create your perfect weekly schedule.</p>
-      </div>
-      <div class="card-glass rounded-2xl p-6">
-       <div class="w-10 h-10 rounded-xl bg-emerald-500/20 flex items-center justify-center mb-4">
-        <i data-lucide="target" class="w-5 h-5 text-emerald-400"></i>
-       </div>
-       <h3 class="text-white font-semibold mb-2">Goal Tracking</h3>
-       <p class="text-white/40 text-sm">Set academic and personal goals with visual progress tracking.</p>
-      </div>
-      <div class="card-glass rounded-2xl p-6">
-       <div class="w-10 h-10 rounded-xl bg-amber-500/20 flex items-center justify-center mb-4">
-        <i data-lucide="trophy" class="w-5 h-5 text-amber-400"></i>
-       </div>
-       <h3 class="text-white font-semibold mb-2">Extracurriculars</h3>
-       <p class="text-white/40 text-sm">Track sports, music, competitions, and every achievement.</p>
-      </div>
-      <div class="card-glass rounded-2xl p-6">
-       <div class="w-10 h-10 rounded-xl bg-rose-500/20 flex items-center justify-center mb-4">
-        <i data-lucide="heart" class="w-5 h-5 text-rose-400"></i>
-       </div>
-       <h3 class="text-white font-semibold mb-2">Wellness Hub</h3>
-       <p class="text-white/40 text-sm">Mood tracking, sleep logs, and mindfulness tools.</p>
-      </div>
-      <div class="card-glass rounded-2xl p-6">
-       <div class="w-10 h-10 rounded-xl bg-cyan-500/20 flex items-center justify-center mb-4">
-        <i data-lucide="bar-chart-3" class="w-5 h-5 text-cyan-400"></i>
-       </div>
-       <h3 class="text-white font-semibold mb-2">Study Analytics</h3>
-       <p class="text-white/40 text-sm">Beautiful charts showing your progress and streaks.</p>
-      </div>
-     </div>
-    </section><!-- Pricing -->
-    <section id="pricing" class="px-8 py-20 max-w-4xl mx-auto">
-     <h2 class="text-3xl font-bold text-white text-center mb-12">Simple Pricing</h2>
-     <div class="grid md:grid-cols-2 gap-6">
-      <div class="card-glass rounded-2xl p-8">
-       <h3 class="text-white font-bold text-xl mb-2">Free</h3>
-       <div class="text-3xl font-bold text-white mb-4">
-        $0<span class="text-sm text-white/40">/forever</span>
-       </div>
-       <ul class="space-y-3 text-white/60 text-sm mb-8">
-        <li>✓ Unlimited subjects</li>
-        <li>✓ Timetable generator</li>
-        <li>✓ Homework planner</li>
-        <li>✓ Basic analytics</li>
-       </ul><button onclick="showApp()" class="btn-secondary w-full">Get Started</button>
-      </div>
-      <div class="rounded-2xl p-8 border-2 border-indigo-500/40 glow-accent" style="background:rgba(99,102,241,0.05)">
-       <div class="badge bg-indigo-500/20 text-indigo-300 mb-4 inline-block">
-        Popular
-       </div>
-       <h3 class="text-white font-bold text-xl mb-2">Pro</h3>
-       <div class="text-3xl font-bold text-white mb-4">
-        $5<span class="text-sm text-white/40">/month</span>
-       </div>
-       <ul class="space-y-3 text-white/60 text-sm mb-8">
-        <li>✓ Everything in Free</li>
-        <li>✓ AI study planner</li>
-        <li>✓ Advanced analytics</li>
-        <li>✓ Priority support</li>
-       </ul><button onclick="showApp()" class="btn-primary w-full">Start Pro Trial</button>
-      </div>
-     </div>
-    </section><!-- FAQ -->
-    <section id="faq" class="px-8 py-20 max-w-3xl mx-auto">
-     <h2 class="text-3xl font-bold text-white text-center mb-12">FAQ</h2>
-     <div class="space-y-4" id="faq-list"></div>
-    </section><!-- Footer -->
-    <footer class="px-8 py-12 border-t border-white/5 text-center">
-     <div class="flex items-center justify-center gap-3 mb-4">
-      <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center font-bold text-white text-xs">
-       A
-      </div><span class="text-white font-bold">Acadence</span>
-     </div>
-     <p class="text-white/30 text-sm">© 2024 Acadence. Built for students, by students.</p>
-    </footer>
-   </div><!-- Main App -->
-   <div id="main-app" class="w-full h-full hidden" style="display:none">
-    <div class="flex h-full w-full"><!-- Sidebar -->
-     <aside class="w-64 shrink-0 border-r border-white/5 p-4 flex flex-col h-full overflow-auto hidden md:flex" style="background:rgba(10,10,20,0.6)">
-      <div class="flex items-center gap-3 mb-8 px-2">
-       <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center font-bold text-white text-xs">
-        A
-       </div><span class="text-white font-bold" id="sidebar-brand">Acadence</span>
-      </div>
-      <div class="space-y-1 flex-1">
-       <div class="sidebar-item active" data-page="dashboard" onclick="navigate('dashboard')">
-        <i data-lucide="layout-dashboard" class="w-4 h-4"></i><span class="text-sm">Dashboard</span>
-       </div>
-       <div class="sidebar-item" data-page="subjects" onclick="navigate('subjects')">
-        <i data-lucide="book-open" class="w-4 h-4"></i><span class="text-sm">Subjects</span>
-       </div>
-       <div class="sidebar-item" data-page="timetable" onclick="navigate('timetable')">
-        <i data-lucide="calendar" class="w-4 h-4"></i><span class="text-sm">Timetable</span>
-       </div>
-       <div class="sidebar-item" data-page="homework" onclick="navigate('homework')">
-        <i data-lucide="clipboard-list" class="w-4 h-4"></i><span class="text-sm">Homework</span>
-       </div>
-       <div class="sidebar-item" data-page="exams" onclick="navigate('exams')">
-        <i data-lucide="file-text" class="w-4 h-4"></i><span class="text-sm">Exams</span>
-       </div>
-       <div class="sidebar-item" data-page="activities" onclick="navigate('activities')">
-        <i data-lucide="trophy" class="w-4 h-4"></i><span class="text-sm">Activities</span>
-       </div>
-       <div class="sidebar-item" data-page="analytics" onclick="navigate('analytics')">
-        <i data-lucide="bar-chart-3" class="w-4 h-4"></i><span class="text-sm">Analytics</span>
-       </div>
-       <div class="sidebar-item" data-page="wellness" onclick="navigate('wellness')">
-        <i data-lucide="heart" class="w-4 h-4"></i><span class="text-sm">Wellness</span>
-       </div>
-      </div>
-      <div class="sidebar-item mt-auto" onclick="showLanding()">
-       <i data-lucide="log-out" class="w-4 h-4"></i><span class="text-sm">Sign Out</span>
-      </div>
-     </aside><!-- Content -->
-     <main class="flex-1 h-full overflow-auto p-6 md:p-8" id="main-content"></main>
-    </div>
-   </div>
-  </div>
-  <script>
-// State
-let currentPage = 'dashboard';
-let allData = [];
-let recordCount = 0;
-
-// Data SDK
-const dataHandler = {
-  onDataChanged(data) {
-    allData = data;
-    recordCount = data.length;
-    if (document.getElementById('main-app').style.display !== 'none') {
-      renderPage();
-    }
-  }
-};
-
-// Element SDK
-const defaultConfig = {
-  app_title: 'Acadence',
-  greeting_text: 'Welcome back',
-  background_color: '#0f0f1a',
-  surface_color: '#1a1a2e',
-  text_color: '#ffffff',
-  primary_action_color: '#6366f1',
-  secondary_action_color: '#8b5cf6'
-};
-
-window.elementSdk.init({
-  defaultConfig,
-  onConfigChange: async (config) => {
-    const title = config.app_title || defaultConfig.app_title;
-    document.querySelectorAll('#brand-title, #sidebar-brand').forEach(el => el.textContent = title);
-    const greeting = config.greeting_text || defaultConfig.greeting_text;
-    const greetEl = document.getElementById('greeting-text');
-    if (greetEl) greetEl.textContent = greeting;
-  },
-  mapToCapabilities: (config) => ({
-    recolorables: [
-      { get: () => config.background_color || defaultConfig.background_color, set: (v) => { config.background_color = v; window.elementSdk.setConfig({ background_color: v }); }},
-      { get: () => config.surface_color || defaultConfig.surface_color, set: (v) => { config.surface_color = v; window.elementSdk.setConfig({ surface_color: v }); }},
-      { get: () => config.text_color || defaultConfig.text_color, set: (v) => { config.text_color = v; window.elementSdk.setConfig({ text_color: v }); }},
-      { get: () => config.primary_action_color || defaultConfig.primary_action_color, set: (v) => { config.primary_action_color = v; window.elementSdk.setConfig({ primary_action_color: v }); }},
-      { get: () => config.secondary_action_color || defaultConfig.secondary_action_color, set: (v) => { config.secondary_action_color = v; window.elementSdk.setConfig({ secondary_action_color: v }); }}
-    ],
-    borderables: [],
-    fontEditable: { get: () => config.font_family || 'Outfit', set: (v) => { config.font_family = v; window.elementSdk.setConfig({ font_family: v }); }},
-    fontSizeable: { get: () => config.font_size || 16, set: (v) => { config.font_size = v; window.elementSdk.setConfig({ font_size: v }); }}
-  }),
-  mapToEditPanelValues: (config) => new Map([
-    ['app_title', config.app_title || defaultConfig.app_title],
-    ['greeting_text', config.greeting_text || defaultConfig.greeting_text]
-  ])
-});
-
-(async () => {
-  const r = await window.dataSdk.init(dataHandler);
-  if (!r.isOk) console.error('Data SDK init failed');
-})();
-
-// Navigation
-function showApp() {
-  document.getElementById('landing-page').style.display = 'none';
-  document.getElementById('main-app').style.display = 'flex';
-  renderPage();
-  lucide.createIcons();
-}
-function showLanding() {
-  document.getElementById('landing-page').style.display = 'block';
-  document.getElementById('main-app').style.display = 'none';
-}
-function navigate(page) {
-  currentPage = page;
-  document.querySelectorAll('.sidebar-item').forEach(el => {
-    el.classList.toggle('active', el.dataset.page === page);
   });
-  renderPage();
+
+  return slots;
 }
 
-function renderPage() {
-  const mc = document.getElementById('main-content');
-  switch(currentPage) {
-    case 'dashboard': mc.innerHTML = renderDashboard(); break;
-    case 'subjects': mc.innerHTML = renderSubjects(); break;
-    case 'timetable': mc.innerHTML = renderTimetable(); break;
-    case 'homework': mc.innerHTML = renderHomework(); break;
-    case 'exams': mc.innerHTML = renderExams(); break;
-    case 'activities': mc.innerHTML = renderActivities(); break;
-    case 'analytics': mc.innerHTML = renderAnalytics(); break;
-    case 'wellness': mc.innerHTML = renderWellness(); break;
+const SUBJECTS_COLORS = ["#6366f1","#10b981","#f59e0b","#ef4444","#8b5cf6","#06b6d4","#ec4899","#14b8a6"];
+
+export default function Acadence() {
+  const [data, setData] = useState(loadData);
+  const [view, setView] = useState("dashboard");
+  const [modal, setModal] = useState(null);
+  const [toast, setToast] = useState(null);
+
+  const { subjects, topics, exams, settings, progress } = data;
+  const streak = data.streak || defaultData.streak;
+
+  useEffect(() => { saveData(data); }, [data]);
+
+  useEffect(() => {
+    if (settings.theme === "dark") {
+      document.documentElement.setAttribute("data-theme","dark");
+    } else {
+      document.documentElement.removeAttribute("data-theme");
+    }
+  }, [settings.theme]);
+
+  // On load, check if streak should be broken (missed a day)
+  useEffect(() => {
+    const updated = computeStreak(streak);
+    if (updated.current !== streak.current) {
+      setData(d => ({ ...d, streak: updated }));
+    }
+  }, []);
+
+  const showToast = (msg, type = "success") => {
+    setToast({ msg, type });
+    setTimeout(() => setToast(null), 2800);
+  };
+
+  const update = useCallback((key, val) => {
+    setData(d => ({ ...d, [key]: val }));
+  }, []);
+
+  // Call this whenever user completes a task
+  const recordStreak = useCallback(() => {
+    setData(d => {
+      const updated = recordActivityToday(d.streak || defaultData.streak);
+      return { ...d, streak: updated };
+    });
+  }, []);
+
+  const todayName = DAYS[new Date().getDay() === 0 ? 6 : new Date().getDay() - 1];
+  const todaySlots = useMemo(() => generateTimetable(subjects, topics, settings, todayName), [subjects, topics, settings, todayName]);
+
+  const upcomingExams = useMemo(() =>
+    exams.filter(e => daysUntil(e.date) >= 0).sort((a,b) => new Date(a.date) - new Date(b.date)),
+    [exams]
+  );
+
+  const completedTopics = useMemo(() =>
+    topics.filter(t => progress[t.id] === STATUS.COMPLETED).length,
+    [topics, progress]
+  );
+
+  function getSubjectColor(id) {
+    const idx = subjects.findIndex(s => s.id === id);
+    return SUBJECTS_COLORS[idx % SUBJECTS_COLORS.length] || "#6366f1";
   }
-  lucide.createIcons();
-}
 
-// Helpers
-function getByType(type) { return allData.filter(d => d.type === type); }
-function toast(msg) {
-  const t = document.createElement('div');
-  t.className = 'toast';
-  t.innerHTML = `<i data-lucide="check-circle" class="w-4 h-4 text-emerald-400"></i><span class="text-sm">${msg}</span>`;
-  document.body.appendChild(t);
-  lucide.createIcons();
-  setTimeout(() => t.remove(), 3000);
-}
+  return (
+    <div style={{ minHeight: "100vh", background: "var(--bg)", color: "var(--text)", fontFamily: "'Outfit', 'Nunito', system-ui, sans-serif", transition: "background 0.3s, color 0.3s" }}>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap');
+        :root {
+          --bg: #f0f4ff;
+          --surface: #ffffff;
+          --surface2: #f7f8fc;
+          --border: rgba(99,102,241,0.12);
+          --text: #1e1b4b;
+          --text2: #6366f1;
+          --text3: #94a3b8;
+          --accent: #6366f1;
+          --accent2: #818cf8;
+          --shadow: 0 2px 16px rgba(99,102,241,0.1);
+          --card-r: 16px;
+        }
+        [data-theme="dark"] {
+          --bg: #0f0e1a;
+          --surface: #1a1830;
+          --surface2: #211f38;
+          --border: rgba(129,140,248,0.15);
+          --text: #e2e0ff;
+          --text2: #818cf8;
+          --text3: #6366f1;
+          --accent: #818cf8;
+          --accent2: #6366f1;
+          --shadow: 0 2px 20px rgba(0,0,0,0.4);
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        input, select, textarea {
+          font-family: inherit;
+          background: var(--surface2);
+          border: 1.5px solid var(--border);
+          color: var(--text);
+          border-radius: 10px;
+          padding: 9px 14px;
+          font-size: 14px;
+          width: 100%;
+          outline: none;
+          transition: border-color 0.2s;
+        }
+        input:focus, select:focus, textarea:focus { border-color: var(--accent); }
+        button { cursor: pointer; font-family: inherit; }
+        .btn {
+          padding: 10px 20px;
+          border-radius: 10px;
+          font-size: 14px;
+          font-weight: 500;
+          border: none;
+          transition: opacity 0.15s, transform 0.1s;
+        }
+        .btn:active { transform: scale(0.97); }
+        .btn-primary { background: var(--accent); color: #fff; }
+        .btn-secondary { background: var(--surface2); color: var(--text); border: 1.5px solid var(--border); }
+        .btn-danger { background: #fef2f2; color: #ef4444; border: 1.5px solid #fecaca; }
+        .card {
+          background: var(--surface);
+          border-radius: var(--card-r);
+          border: 1px solid var(--border);
+          padding: 20px;
+          box-shadow: var(--shadow);
+        }
+        .nav-item {
+          display: flex; flex-direction: column; align-items: center; gap: 3px;
+          padding: 8px 14px; border-radius: 12px; font-size: 11px; font-weight: 500;
+          color: var(--text3); background: none; border: none;
+          transition: background 0.15s, color 0.15s;
+        }
+        .nav-item.active { background: var(--accent); color: #fff; }
+        .nav-item svg { width: 22px; height: 22px; }
+        .badge {
+          display: inline-block; padding: 2px 10px; border-radius: 20px;
+          font-size: 11px; font-weight: 600;
+        }
+        .modal-overlay {
+          position: fixed; inset: 0; background: rgba(0,0,0,0.45);
+          display: flex; align-items: flex-end; justify-content: center;
+          z-index: 100; animation: fadeIn 0.2s;
+        }
+        .modal-sheet {
+          background: var(--surface); border-radius: 20px 20px 0 0;
+          padding: 24px; width: 100%; max-width: 560px;
+          max-height: 90vh; overflow-y: auto;
+          animation: slideUp 0.25s cubic-bezier(0.32,0.72,0,1);
+        }
+        @keyframes fadeIn { from { opacity:0 } to { opacity:1 } }
+        @keyframes slideUp { from { transform: translateY(100%) } to { transform: translateY(0) } }
+        .progress-bar {
+          height: 7px; border-radius: 10px;
+          background: var(--surface2);
+          overflow: hidden;
+        }
+        .progress-fill {
+          height: 100%; border-radius: 10px;
+          background: linear-gradient(90deg, var(--accent), var(--accent2));
+          transition: width 0.4s;
+        }
+        .toast {
+          position: fixed; bottom: 90px; left: 50%; transform: translateX(-50%);
+          background: var(--surface); border: 1px solid var(--border);
+          padding: 10px 20px; border-radius: 30px; font-size: 13px; font-weight: 500;
+          box-shadow: var(--shadow); z-index: 200; white-space: nowrap;
+          animation: fadeIn 0.2s;
+        }
+        .slot-card {
+          display: flex; align-items: center; gap: 12px;
+          padding: 12px 16px; border-radius: 12px;
+          border-left: 4px solid;
+          background: var(--surface2);
+          margin-bottom: 8px;
+        }
+        .chip-group { display: flex; flex-wrap: wrap; gap: 6px; }
+        .chip {
+          padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 500;
+          cursor: pointer; user-select: none; transition: opacity 0.15s;
+          border: 1.5px solid transparent;
+        }
+        .chip.active { opacity: 1; }
+        .chip.inactive { opacity: 0.45; }
+        label { font-size: 13px; font-weight: 500; color: var(--text3); display: block; margin-bottom: 5px; margin-top: 12px; }
+        .section-title { font-size: 13px; font-weight: 600; color: var(--text3); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 12px; }
+        .exam-countdown {
+          display: inline-flex; align-items: center; gap: 5px;
+          padding: 3px 10px; border-radius: 20px; font-size: 12px; font-weight: 600;
+        }
+        .list-item {
+          display: flex; align-items: center; justify-content: space-between;
+          padding: 14px 0; border-bottom: 1px solid var(--border);
+        }
+        .list-item:last-child { border-bottom: none; }
+        .icon-btn {
+          background: none; border: none; color: var(--text3);
+          padding: 6px; border-radius: 8px; font-size: 18px; line-height: 1;
+          transition: background 0.15s, color 0.15s;
+        }
+        .icon-btn:hover { background: var(--surface2); color: var(--text); }
+        @media (max-width: 500px) {
+          .modal-sheet { padding: 20px 16px; }
+          .card { padding: 16px; }
+        }
+      `}</style>
 
-// Dashboard
-function renderDashboard() {
-  const subjects = getByType('subject');
-  const homework = getByType('homework');
-  const pending = homework.filter(h => !h.completed).length;
-  const exams = getByType('exam');
-  const streak = Math.min(allData.length, 7);
-  const config = window.elementSdk.config;
-  const greeting = config.greeting_text || defaultConfig.greeting_text;
-  return `<div class="fade-in">
-    <h1 class="text-2xl md:text-3xl font-bold text-white mb-1" id="greeting-text">${greeting}</h1>
-    <p class="text-white/40 mb-8">Here's your academic overview</p>
-    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-      <div class="stat-card rounded-xl p-5"><div class="text-2xl font-bold text-white">${subjects.length}</div><div class="text-xs text-white/40 mt-1">Subjects</div></div>
-      <div class="stat-card rounded-xl p-5"><div class="text-2xl font-bold text-white">${pending}</div><div class="text-xs text-white/40 mt-1">Pending Tasks</div></div>
-      <div class="stat-card rounded-xl p-5"><div class="text-2xl font-bold text-white">${exams.length}</div><div class="text-xs text-white/40 mt-1">Upcoming Exams</div></div>
-      <div class="stat-card rounded-xl p-5"><div class="text-2xl font-bold text-white">${streak}🔥</div><div class="text-xs text-white/40 mt-1">Day Streak</div></div>
-    </div>
-    <div class="grid md:grid-cols-2 gap-6">
-      <div class="card-glass rounded-2xl p-6">
-        <h3 class="text-white font-semibold mb-4 flex items-center gap-2"><i data-lucide="clipboard-list" class="w-4 h-4 text-indigo-400"></i> Recent Homework</h3>
-        ${homework.length === 0 ? '<p class="text-white/30 text-sm">No homework yet. Add some from the Homework tab!</p>' :
-        homework.slice(-5).reverse().map(h => `<div class="flex items-center justify-between py-2 border-b border-white/5">
-          <div class="flex items-center gap-3"><span class="w-2 h-2 rounded-full ${h.completed ? 'bg-emerald-400' : 'bg-amber-400'}"></span><span class="text-sm text-white/80">${h.name}</span></div>
-          <span class="text-xs text-white/30">${h.subject || ''}</span>
-        </div>`).join('')}
-      </div>
-      <div class="card-glass rounded-2xl p-6">
-        <h3 class="text-white font-semibold mb-4 flex items-center gap-2"><i data-lucide="zap" class="w-4 h-4 text-amber-400"></i> Quick Actions</h3>
-        <div class="grid grid-cols-2 gap-3">
-          <button onclick="navigate('homework')" class="btn-secondary text-sm py-3">+ Homework</button>
-          <button onclick="navigate('subjects')" class="btn-secondary text-sm py-3">+ Subject</button>
-          <button onclick="navigate('exams')" class="btn-secondary text-sm py-3">+ Exam</button>
-          <button onclick="navigate('activities')" class="btn-secondary text-sm py-3">+ Activity</button>
+      {/* Main content */}
+      <div style={{ maxWidth: 560, margin: "0 auto", paddingBottom: 90 }}>
+        {/* Header */}
+        <div style={{ padding: "20px 20px 0", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <div>
+            <div style={{ fontSize: 22, fontWeight: 700, color: "var(--accent)" }}>Acadence</div>
+            <div style={{ fontSize: 13, color: "var(--text3)" }}>{new Date().toLocaleDateString("en-US", { weekday:"long", month:"short", day:"numeric" })}</div>
+          </div>
+          <button className="btn btn-secondary" style={{ padding: "8px 14px", fontSize: 13 }}
+            onClick={() => update("settings", { ...settings, theme: settings.theme === "dark" ? "light" : "dark" })}>
+            {settings.theme === "dark" ? "☀️" : "🌙"}
+          </button>
+        </div>
+
+        {/* Views */}
+        <div style={{ padding: "16px 16px 0" }}>
+          {view === "dashboard" && <Dashboard subjects={subjects} topics={topics} exams={upcomingExams} todaySlots={todaySlots} progress={progress} completedTopics={completedTopics} getSubjectColor={getSubjectColor} todayName={todayName} streak={streak} />}
+          {view === "subjects" && <SubjectsView subjects={subjects} topics={topics} progress={progress} update={update} setModal={setModal} showToast={showToast} getSubjectColor={getSubjectColor} recordStreak={recordStreak} />}
+          {view === "timetable" && <TimetableView subjects={subjects} topics={topics} settings={settings} getSubjectColor={getSubjectColor} />}
+          {view === "exams" && <ExamsView exams={exams} subjects={subjects} update={update} setModal={setModal} showToast={showToast} getSubjectColor={getSubjectColor} />}
+          {view === "progress" && <ProgressView subjects={subjects} topics={topics} progress={progress} update={update} getSubjectColor={getSubjectColor} recordStreak={recordStreak} />}
+          {view === "settings" && <SettingsView settings={settings} update={update} showToast={showToast} />}
         </div>
       </div>
-    </div>
-  </div>`;
-}
 
-// Subjects
-function renderSubjects() {
-  const subjects = getByType('subject');
-  const colors = ['#6366f1','#8b5cf6','#ec4899','#f59e0b','#10b981','#06b6d4','#f43f5e','#84cc16'];
-  return `<div class="fade-in">
-    <div class="flex items-center justify-between mb-8">
-      <div><h1 class="text-2xl font-bold text-white">Subjects</h1><p class="text-white/40 text-sm">${subjects.length} subjects added</p></div>
-      <button class="btn-primary text-sm" onclick="showAddSubject()">+ Add Subject</button>
-    </div>
-    <div id="add-subject-form" class="hidden card-glass rounded-2xl p-6 mb-6">
-      <div class="grid md:grid-cols-3 gap-4">
-        <input id="subj-name" placeholder="Subject name" class="w-full">
-        <input id="subj-notes" placeholder="Teacher / Notes" class="w-full">
-        <button onclick="addSubject()" class="btn-primary">Save Subject</button>
+      {/* Bottom Nav */}
+      <div style={{ position: "fixed", bottom: 0, left: 0, right: 0, background: "var(--surface)", borderTop: "1px solid var(--border)", display: "flex", justifyContent: "space-around", padding: "8px 0 12px", zIndex: 50 }}>
+        {[
+          { id: "dashboard", label: "Home", icon: <HomeIcon /> },
+          { id: "subjects", label: "Subjects", icon: <BookIcon /> },
+          { id: "timetable", label: "Schedule", icon: <CalIcon /> },
+          { id: "exams", label: "Exams", icon: <StarIcon /> },
+          { id: "progress", label: "Progress", icon: <ChartIcon /> },
+        ].map(n => (
+          <button key={n.id} className={`nav-item ${view === n.id ? "active" : ""}`} onClick={() => setView(n.id)}>
+            {n.icon}{n.label}
+          </button>
+        ))}
       </div>
-    </div>
-    <div class="grid md:grid-cols-3 gap-4">
-      ${subjects.map((s, i) => `<div class="card-glass rounded-2xl p-5 relative group">
-        <div class="w-3 h-3 rounded-full absolute top-5 right-5" style="background:${s.color || colors[i % colors.length]}"></div>
-        <h3 class="text-white font-semibold mb-1">${s.name}</h3>
-        <p class="text-white/30 text-xs mb-3">${s.notes || ''}</p>
-        <button onclick="deleteRecord('${s.__backendId}')" class="text-xs text-red-400/60 hover:text-red-400">Remove</button>
-      </div>`).join('')}
-      ${subjects.length === 0 ? '<p class="text-white/30 col-span-3 text-center py-12">No subjects yet. Click "Add Subject" to start!</p>' : ''}
-    </div>
-  </div>`;
-}
-function showAddSubject() { document.getElementById('add-subject-form').classList.toggle('hidden'); }
-async function addSubject() {
-  const name = document.getElementById('subj-name').value.trim();
-  if (!name) return;
-  if (recordCount >= 999) { toast('Record limit reached!'); return; }
-  const colors = ['#6366f1','#8b5cf6','#ec4899','#f59e0b','#10b981','#06b6d4'];
-  const btn = event.target; btn.disabled = true; btn.textContent = 'Saving...';
-  const r = await window.dataSdk.create({ type: 'subject', name, notes: document.getElementById('subj-notes').value, color: colors[Math.floor(Math.random()*colors.length)], status: '', subject: '', priority: '', due_date: '', category: '', completed: false, hours: 0, created_at: new Date().toISOString() });
-  btn.disabled = false; btn.textContent = 'Save Subject';
-  if (r.isOk) { toast('Subject added!'); document.getElementById('subj-name').value = ''; document.getElementById('subj-notes').value = ''; }
-  else toast('Error saving subject');
-}
 
-// Homework
-function renderHomework() {
-  const hw = getByType('homework');
-  const subjects = getByType('subject');
-  return `<div class="fade-in">
-    <div class="flex items-center justify-between mb-8">
-      <div><h1 class="text-2xl font-bold text-white">Homework</h1><p class="text-white/40 text-sm">${hw.filter(h=>!h.completed).length} pending</p></div>
-      <button class="btn-primary text-sm" onclick="document.getElementById('hw-form').classList.toggle('hidden')">+ Add Homework</button>
-    </div>
-    <div id="hw-form" class="hidden card-glass rounded-2xl p-6 mb-6">
-      <div class="grid md:grid-cols-4 gap-4">
-        <input id="hw-name" placeholder="Assignment name" class="w-full">
-        <select id="hw-subject" class="w-full"><option value="">Subject</option>${subjects.map(s=>`<option value="${s.name}">${s.name}</option>`).join('')}</select>
-        <input id="hw-due" type="date" class="w-full">
-        <button onclick="addHomework()" class="btn-primary">Add</button>
-      </div>
-    </div>
-    <div class="space-y-3">
-      ${hw.length === 0 ? '<p class="text-white/30 text-center py-12">No homework added yet.</p>' :
-      hw.sort((a,b) => (a.completed?1:0)-(b.completed?1:0)).map(h => `<div class="card-glass rounded-xl p-4 flex items-center gap-4">
-        <button onclick="toggleHw('${h.__backendId}', ${!h.completed})" class="w-5 h-5 rounded border ${h.completed ? 'bg-emerald-500 border-emerald-500' : 'border-white/20'} flex items-center justify-center shrink-0">${h.completed ? '<i data-lucide="check" class="w-3 h-3 text-white"></i>' : ''}</button>
-        <div class="flex-1 min-w-0"><div class="text-sm text-white ${h.completed ? 'line-through opacity-50' : ''}">${h.name}</div><div class="text-xs text-white/30">${h.subject || ''}${h.due_date ? ' • Due: '+h.due_date : ''}</div></div>
-        <button onclick="deleteRecord('${h.__backendId}')" class="text-white/20 hover:text-red-400"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
-      </div>`).join('')}
-    </div>
-  </div>`;
-}
-async function addHomework() {
-  const name = document.getElementById('hw-name').value.trim();
-  if (!name) return;
-  if (recordCount >= 999) { toast('Limit reached!'); return; }
-  const r = await window.dataSdk.create({ type: 'homework', name, subject: document.getElementById('hw-subject').value, due_date: document.getElementById('hw-due').value, priority: 'medium', status: 'pending', color: '', notes: '', category: '', completed: false, hours: 0, created_at: new Date().toISOString() });
-  if (r.isOk) { toast('Homework added!'); document.getElementById('hw-name').value = ''; }
-}
-async function toggleHw(id, completed) {
-  const item = allData.find(d => d.__backendId === id);
-  if (item) { const r = await window.dataSdk.update({...item, completed}); if(r.isOk) toast(completed ? 'Done! 🎉' : 'Unmarked'); }
-}
-
-// Exams
-function renderExams() {
-  const exams = getByType('exam');
-  const subjects = getByType('subject');
-  return `<div class="fade-in">
-    <div class="flex items-center justify-between mb-8">
-      <div><h1 class="text-2xl font-bold text-white">Exams</h1><p class="text-white/40 text-sm">${exams.length} upcoming</p></div>
-      <button class="btn-primary text-sm" onclick="document.getElementById('exam-form').classList.toggle('hidden')">+ Add Exam</button>
-    </div>
-    <div id="exam-form" class="hidden card-glass rounded-2xl p-6 mb-6">
-      <div class="grid md:grid-cols-4 gap-4">
-        <input id="exam-name" placeholder="Exam name" class="w-full">
-        <select id="exam-subject" class="w-full"><option value="">Subject</option>${subjects.map(s=>`<option value="${s.name}">${s.name}</option>`).join('')}</select>
-        <input id="exam-date" type="date" class="w-full">
-        <button onclick="addExam()" class="btn-primary">Add</button>
-      </div>
-    </div>
-    <div class="grid md:grid-cols-2 gap-4">
-      ${exams.length === 0 ? '<p class="text-white/30 col-span-2 text-center py-12">No exams scheduled.</p>' :
-      exams.map(e => {
-        const days = e.due_date ? Math.max(0, Math.ceil((new Date(e.due_date) - new Date()) / 86400000)) : '?';
-        return `<div class="card-glass rounded-2xl p-5">
-          <div class="flex items-center justify-between mb-2"><h3 class="text-white font-semibold">${e.name}</h3><button onclick="deleteRecord('${e.__backendId}')" class="text-white/20 hover:text-red-400"><i data-lucide="trash-2" class="w-4 h-4"></i></button></div>
-          <p class="text-white/40 text-sm mb-3">${e.subject || 'General'}${e.due_date ? ' • '+e.due_date : ''}</p>
-          <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/10 text-amber-300 text-xs font-semibold"><i data-lucide="clock" class="w-3 h-3"></i> ${days} days left</div>
-        </div>`;
-      }).join('')}
-    </div>
-  </div>`;
-}
-async function addExam() {
-  const name = document.getElementById('exam-name').value.trim();
-  if (!name) return;
-  if (recordCount >= 999) { toast('Limit reached!'); return; }
-  const r = await window.dataSdk.create({ type: 'exam', name, subject: document.getElementById('exam-subject').value, due_date: document.getElementById('exam-date').value, priority: 'high', status: 'upcoming', color: '', notes: '', category: '', completed: false, hours: 0, created_at: new Date().toISOString() });
-  if (r.isOk) { toast('Exam added!'); document.getElementById('exam-name').value = ''; }
-}
-
-// Timetable
-function renderTimetable() {
-  const days = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
-  const slots = getByType('timetable');
-  return `<div class="fade-in">
-    <div class="flex items-center justify-between mb-8">
-      <h1 class="text-2xl font-bold text-white">Timetable</h1>
-      <button class="btn-primary text-sm" onclick="document.getElementById('tt-form').classList.toggle('hidden')">+ Add Slot</button>
-    </div>
-    <div id="tt-form" class="hidden card-glass rounded-2xl p-6 mb-6">
-      <div class="grid md:grid-cols-5 gap-4">
-        <select id="tt-day" class="w-full">${days.map(d=>`<option value="${d}">${d}</option>`).join('')}</select>
-        <input id="tt-time" placeholder="e.g. 9:00 AM" class="w-full">
-        <input id="tt-subj" placeholder="Subject" class="w-full">
-        <input id="tt-notes" placeholder="Room / Teacher" class="w-full">
-        <button onclick="addSlot()" class="btn-primary">Add</button>
-      </div>
-    </div>
-    <div class="grid md:grid-cols-3 lg:grid-cols-6 gap-4">
-      ${days.map(day => {
-        const daySlots = slots.filter(s => s.category === day).sort((a,b) => (a.notes||'').localeCompare(b.notes||''));
-        return `<div class="card-glass rounded-2xl p-4">
-          <h3 class="text-white font-semibold text-sm mb-3">${day.slice(0,3)}</h3>
-          <div class="space-y-2">
-            ${daySlots.length === 0 ? '<p class="text-white/20 text-xs">No classes</p>' :
-            daySlots.map(s => `<div class="p-2 rounded-lg bg-indigo-500/10 border border-indigo-500/20">
-              <div class="text-xs text-white/80 font-medium">${s.name}</div>
-              <div class="text-xs text-white/30">${s.subject || ''}</div>
-            </div>`).join('')}
+      {/* Modal */}
+      {modal && (
+        <div className="modal-overlay" onClick={e => { if (e.target === e.currentTarget) setModal(null); }}>
+          <div className="modal-sheet">
+            {modal.type === "add_subject" && <SubjectModal data={data} update={update} setModal={setModal} showToast={showToast} editing={modal.editing} />}
+            {modal.type === "add_topic" && <TopicModal data={data} update={update} setModal={setModal} showToast={showToast} editing={modal.editing} subjectId={modal.subjectId} />}
+            {modal.type === "add_exam" && <ExamModal data={data} update={update} setModal={setModal} showToast={showToast} editing={modal.editing} />}
           </div>
-        </div>`;
-      }).join('')}
+        </div>
+      )}
+
+      {toast && (
+        <div className="toast" style={{ color: toast.type === "error" ? "#ef4444" : "#10b981" }}>
+          {toast.type === "error" ? "⚠️" : "✓"} {toast.msg}
+        </div>
+      )}
     </div>
-  </div>`;
-}
-async function addSlot() {
-  const subj = document.getElementById('tt-subj').value.trim();
-  if (!subj) return;
-  if (recordCount >= 999) { toast('Limit reached!'); return; }
-  const r = await window.dataSdk.create({ type: 'timetable', name: subj, subject: document.getElementById('tt-time').value, due_date: '', priority: '', status: '', color: '', notes: document.getElementById('tt-notes').value, category: document.getElementById('tt-day').value, completed: false, hours: 0, created_at: new Date().toISOString() });
-  if (r.isOk) { toast('Slot added!'); document.getElementById('tt-subj').value = ''; }
+  );
 }
 
-// Activities
-function renderActivities() {
-  const acts = getByType('activity');
-  const categories = ['Sports','Music','Dance','Debate','MUN','Olympiads','Coding','Art','Theatre','Writing','Volunteering','Other'];
-  return `<div class="fade-in">
-    <div class="flex items-center justify-between mb-8">
-      <div><h1 class="text-2xl font-bold text-white">Extracurriculars</h1><p class="text-white/40 text-sm">${acts.length} activities tracked</p></div>
-      <button class="btn-primary text-sm" onclick="document.getElementById('act-form').classList.toggle('hidden')">+ Add Activity</button>
-    </div>
-    <div id="act-form" class="hidden card-glass rounded-2xl p-6 mb-6">
-      <div class="grid md:grid-cols-4 gap-4">
-        <input id="act-name" placeholder="Activity name" class="w-full">
-        <select id="act-cat" class="w-full">${categories.map(c=>`<option value="${c}">${c}</option>`).join('')}</select>
-        <input id="act-notes" placeholder="Notes / Achievement" class="w-full">
-        <button onclick="addActivity()" class="btn-primary">Add</button>
+function Dashboard({ subjects, topics, exams, todaySlots, progress, completedTopics, getSubjectColor, todayName, streak }) {
+  const totalTopics = topics.length;
+  const pct = totalTopics > 0 ? Math.round((completedTopics / totalTopics) * 100) : 0;
+  const str = streak || { current: 0, longest: 0, history: {} };
+
+  // Last 7 days for activity grid
+  const last7 = Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(); d.setDate(d.getDate() - (6 - i));
+    const key = d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0") + "-" + String(d.getDate()).padStart(2,"0");
+    const label = d.toLocaleDateString("en-US", { weekday: "short" });
+    return { key, label, active: !!(str.history||{})[key] };
+  });
+
+  const flameColor = str.current >= 7 ? "#f59e0b" : str.current >= 3 ? "#f97316" : str.current >= 1 ? "#ef4444" : "#94a3b8";
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+      {/* Stats row */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
+        {[
+          { label: "Subjects", val: subjects.length, color: "#6366f1" },
+          { label: "Topics", val: topics.length, color: "#10b981" },
+          { label: "Exams", val: exams.length, color: "#f59e0b" },
+        ].map(s => (
+          <div key={s.label} className="card" style={{ textAlign: "center", padding: "14px 10px" }}>
+            <div style={{ fontSize: 24, fontWeight: 700, color: s.color }}>{s.val}</div>
+            <div style={{ fontSize: 12, color: "var(--text3)", marginTop: 2 }}>{s.label}</div>
+          </div>
+        ))}
       </div>
+
+      {/* Streak card */}
+      <div className="card" style={{ background: str.current > 0 ? `linear-gradient(135deg, ${flameColor}18, ${flameColor}08)` : "var(--surface)", border: str.current > 0 ? `1px solid ${flameColor}40` : "1px solid var(--border)" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <div style={{ fontSize: 28, lineHeight: 1 }}>{str.current >= 7 ? "🔥" : str.current >= 3 ? "⚡" : str.current >= 1 ? "✨" : "💤"}</div>
+            <div>
+              <div style={{ fontWeight: 700, fontSize: 22, color: flameColor, lineHeight: 1 }}>{str.current} <span style={{ fontSize: 14, fontWeight: 500, color: "var(--text3)" }}>day{str.current !== 1 ? "s" : ""}</span></div>
+              <div style={{ fontSize: 12, color: "var(--text3)", marginTop: 2 }}>Current streak</div>
+            </div>
+          </div>
+          <div style={{ textAlign: "right" }}>
+            <div style={{ fontWeight: 600, fontSize: 16, color: "var(--text)" }}>{str.longest || 0}</div>
+            <div style={{ fontSize: 12, color: "var(--text3)" }}>Best streak</div>
+          </div>
+        </div>
+        {/* 7-day activity dots */}
+        <div style={{ display: "flex", gap: 6, justifyContent: "space-between" }}>
+          {last7.map(day => (
+            <div key={day.key} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 5 }}>
+              <div style={{ width: "100%", aspectRatio: "1", borderRadius: 6, background: day.active ? flameColor : "var(--surface2)", border: `1px solid ${day.active ? flameColor : "var(--border)"}`, transition: "background 0.3s", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                {day.active && <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><polyline points="1.5,5 4,7.5 8.5,2" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+              </div>
+              <div style={{ fontSize: 10, color: "var(--text3)", fontWeight: 500 }}>{day.label}</div>
+            </div>
+          ))}
+        </div>
+        {str.current === 0 && (
+          <div style={{ marginTop: 10, fontSize: 12, color: "var(--text3)", textAlign: "center" }}>Complete a topic today to start your streak 🎯</div>
+        )}
+        {str.current > 0 && str.lastActiveDate !== todayStr() && (
+          <div style={{ marginTop: 10, fontSize: 12, color: "#f97316", textAlign: "center", fontWeight: 500 }}>⚠️ Complete a topic today to keep your streak!</div>
+        )}
+      </div>
+
+      {/* Progress */}
+      <div className="card">
+        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 10 }}>
+          <span style={{ fontWeight: 600, fontSize: 15 }}>Overall Progress</span>
+          <span style={{ fontWeight: 700, color: "var(--accent)" }}>{pct}%</span>
+        </div>
+        <div className="progress-bar">
+          <div className="progress-fill" style={{ width: `${pct}%` }} />
+        </div>
+        <div style={{ fontSize: 12, color: "var(--text3)", marginTop: 8 }}>{completedTopics} of {totalTopics} topics completed</div>
+      </div>
+
+      {/* Today's schedule */}
+      <div className="card">
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+          <span style={{ fontWeight: 600, fontSize: 15 }}>Today – {todayName}</span>
+          <span className="badge" style={{ background: "var(--surface2)", color: "var(--accent)", fontSize: 12 }}>{todaySlots.filter(s => s.type !== "break").length} sessions</span>
+        </div>
+        {todaySlots.length === 0 && subjects.length === 0 && (
+          <div style={{ textAlign: "center", color: "var(--text3)", fontSize: 14, padding: "20px 0" }}>Add subjects to generate your timetable</div>
+        )}
+        {todaySlots.slice(0, 5).map((slot, i) => (
+          <div key={i} className="slot-card" style={{ borderLeftColor: slot.type === "break" ? "#e2e8f0" : (slot.subjectId ? getSubjectColor(slot.subjectId) : "#6366f1") }}>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontWeight: 600, fontSize: 14, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{slot.label}</div>
+              <div style={{ fontSize: 12, color: "var(--text3)" }}>{slot.start} – {slot.end}</div>
+            </div>
+            <span className="badge" style={{ background: slot.type === "break" ? "#f1f5f9" : slot.type === "revision" ? "#fef3c7" : "#ede9fe", color: slot.type === "break" ? "#64748b" : slot.type === "revision" ? "#d97706" : "#7c3aed", fontSize: 11, whiteSpace: "nowrap" }}>
+              {slot.type === "break" ? "Break" : slot.type === "revision" ? "Revision" : formatTime(slot.duration)}
+            </span>
+          </div>
+        ))}
+        {todaySlots.length > 5 && <div style={{ fontSize: 12, color: "var(--text3)", textAlign: "center", marginTop: 8 }}>+{todaySlots.length - 5} more sessions</div>}
+      </div>
+
+      {/* Upcoming exams */}
+      {exams.length > 0 && (
+        <div className="card">
+          <div style={{ fontWeight: 600, fontSize: 15, marginBottom: 14 }}>Upcoming Exams</div>
+          {exams.slice(0,3).map(exam => {
+            const days = daysUntil(exam.date);
+            return (
+              <div key={exam.id} className="list-item">
+                <div>
+                  <div style={{ fontWeight: 600, fontSize: 14 }}>{exam.name}</div>
+                  <div style={{ fontSize: 12, color: "var(--text3)" }}>{exam.subject} · {new Date(exam.date).toLocaleDateString("en-US",{month:"short",day:"numeric"})}</div>
+                </div>
+                <span className="exam-countdown" style={{ background: days === 0 ? "#fef2f2" : days <= 3 ? "#fffbeb" : "#f0fdf4", color: days === 0 ? "#ef4444" : days <= 3 ? "#d97706" : "#16a34a" }}>
+                  {days === 0 ? "Today!" : days === 1 ? "Tomorrow" : `${days}d`}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
-    <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-      ${acts.length === 0 ? '<p class="text-white/30 col-span-3 text-center py-12">No activities added yet.</p>' :
-      acts.map(a => `<div class="card-glass rounded-2xl p-5">
-        <div class="flex items-center justify-between mb-2"><span class="badge bg-purple-500/20 text-purple-300">${a.category || 'Other'}</span><button onclick="deleteRecord('${a.__backendId}')" class="text-white/20 hover:text-red-400"><i data-lucide="trash-2" class="w-4 h-4"></i></button></div>
-        <h3 class="text-white font-semibold mt-2">${a.name}</h3>
-        <p class="text-white/30 text-xs mt-1">${a.notes || ''}</p>
-      </div>`).join('')}
-    </div>
-  </div>`;
-}
-async function addActivity() {
-  const name = document.getElementById('act-name').value.trim();
-  if (!name) return;
-  if (recordCount >= 999) { toast('Limit reached!'); return; }
-  const r = await window.dataSdk.create({ type: 'activity', name, subject: '', due_date: '', priority: '', status: '', color: '', notes: document.getElementById('act-notes').value, category: document.getElementById('act-cat').value, completed: false, hours: 0, created_at: new Date().toISOString() });
-  if (r.isOk) { toast('Activity added!'); document.getElementById('act-name').value = ''; }
+  );
 }
 
-// Analytics
-function renderAnalytics() {
-  const hw = getByType('homework');
-  const done = hw.filter(h => h.completed).length;
-  const total = hw.length;
-  const pct = total ? Math.round((done/total)*100) : 0;
-  const subjects = getByType('subject');
-  return `<div class="fade-in">
-    <h1 class="text-2xl font-bold text-white mb-8">Study Analytics</h1>
-    <div class="grid md:grid-cols-3 gap-6 mb-8">
-      <div class="stat-card rounded-2xl p-6 text-center">
-        <div class="text-4xl font-bold text-white mb-2">${pct}%</div>
-        <div class="text-white/40 text-sm">Completion Rate</div>
-        <div class="w-full h-2 rounded-full bg-white/10 mt-4"><div class="h-2 rounded-full bg-gradient-to-r from-indigo-500 to-purple-500" style="width:${pct}%"></div></div>
-      </div>
-      <div class="stat-card rounded-2xl p-6 text-center">
-        <div class="text-4xl font-bold text-white mb-2">${done}</div>
-        <div class="text-white/40 text-sm">Tasks Completed</div>
-      </div>
-      <div class="stat-card rounded-2xl p-6 text-center">
-        <div class="text-4xl font-bold text-white mb-2">${subjects.length}</div>
-        <div class="text-white/40 text-sm">Active Subjects</div>
-      </div>
-    </div>
-    <div class="card-glass rounded-2xl p-6">
-      <h3 class="text-white font-semibold mb-4">Subject Breakdown</h3>
-      <div class="space-y-3">
-        ${subjects.length === 0 ? '<p class="text-white/30 text-sm">Add subjects to see breakdown.</p>' :
-        subjects.map(s => {
-          const sHw = hw.filter(h => h.subject === s.name);
-          const sDone = sHw.filter(h => h.completed).length;
-          const sPct = sHw.length ? Math.round((sDone/sHw.length)*100) : 0;
-          return `<div class="flex items-center gap-4"><div class="w-3 h-3 rounded-full" style="background:${s.color||'#6366f1'}"></div><span class="text-sm text-white/80 w-32">${s.name}</span><div class="flex-1 h-2 rounded-full bg-white/10"><div class="h-2 rounded-full" style="width:${sPct}%;background:${s.color||'#6366f1'}"></div></div><span class="text-xs text-white/40 w-12 text-right">${sPct}%</span></div>`;
-        }).join('')}
-      </div>
-    </div>
-  </div>`;
-}
+function SubjectsView({ subjects, topics, progress, update, setModal, showToast, getSubjectColor }) {
+  const [expanded, setExpanded] = useState(null);
+  const [confirmDelete, setConfirmDelete] = useState(null); // { type: "subject"|"topic", id }
+  const [confirmDeleteTopic, setConfirmDeleteTopic] = useState(null);
 
-// Wellness
-function renderWellness() {
-  const moods = getByType('mood');
-  const emojis = ['😢','😟','😐','😊','🤩'];
-  return `<div class="fade-in">
-    <h1 class="text-2xl font-bold text-white mb-2">Wellness Hub</h1>
-    <p class="text-white/40 text-sm mb-8">Track your mood and wellbeing</p>
-    <div class="card-glass rounded-2xl p-6 mb-6">
-      <h3 class="text-white font-semibold mb-4">How are you feeling today?</h3>
-      <div class="flex gap-4 mb-4">${emojis.map((e,i) => `<button onclick="logMood(${i+1},'${e}')" class="text-3xl hover:scale-125 transition">${e}</button>`).join('')}</div>
-    </div>
-    <div class="card-glass rounded-2xl p-6">
-      <h3 class="text-white font-semibold mb-4">Mood History</h3>
-      <div class="space-y-2">
-        ${moods.length === 0 ? '<p class="text-white/30 text-sm">Log your first mood above!</p>' :
-        moods.slice(-10).reverse().map(m => `<div class="flex items-center gap-3 py-2 border-b border-white/5">
-          <span class="text-xl">${m.notes || '😊'}</span>
-          <span class="text-sm text-white/40">${new Date(m.created_at).toLocaleDateString()}</span>
-        </div>`).join('')}
-      </div>
-    </div>
-  </div>`;
-}
-async function logMood(level, emoji) {
-  if (recordCount >= 999) { toast('Limit reached!'); return; }
-  const r = await window.dataSdk.create({ type: 'mood', name: 'Mood Log', subject: '', due_date: '', priority: '', status: '', color: '', notes: emoji, category: '', completed: false, hours: level, created_at: new Date().toISOString() });
-  if (r.isOk) toast('Mood logged! ' + emoji);
-}
-
-// Delete
-async function deleteRecord(id) {
-  const item = allData.find(d => d.__backendId === id);
-  if (!item) return;
-  const r = await window.dataSdk.delete(item);
-  if (r.isOk) toast('Deleted');
-}
-
-// FAQ
-const faqs = [
-  { q: 'Is Acadence really free?', a: 'Yes! The core features are completely free forever.' },
-  { q: 'Does it work offline?', a: 'Yes, all data persists locally and syncs when online.' },
-  { q: 'Can I use it on mobile?', a: 'Absolutely — Acadence is fully responsive.' },
-  { q: 'Is my data private?', a: 'Your data is stored securely and never shared.' }
-];
-document.addEventListener('DOMContentLoaded', () => {
-  const faqList = document.getElementById('faq-list');
-  if (faqList) {
-    faqList.innerHTML = faqs.map((f,i) => `<div class="card-glass rounded-xl p-5 cursor-pointer" onclick="this.querySelector('.faq-a').classList.toggle('hidden')">
-      <div class="flex items-center justify-between"><span class="text-white font-medium text-sm">${f.q}</span><i data-lucide="chevron-down" class="w-4 h-4 text-white/30"></i></div>
-      <p class="faq-a hidden text-white/40 text-sm mt-3">${f.a}</p>
-    </div>`).join('');
+  function doDeleteSubject(id) {
+    update("subjects", subjects.filter(s => s.id !== id));
+    update("topics", topics.filter(t => t.subjectId !== id));
+    setConfirmDelete(null);
+    showToast("Subject deleted");
   }
-  lucide.createIcons();
-});
-</script>
- <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9f482e22a5cfa7dc',t:'MTc3NzU2OTI0MC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
-</html>
+
+  function doDeleteTopic(id) {
+    update("topics", topics.filter(t => t.id !== id));
+    setConfirmDeleteTopic(null);
+    showToast("Topic deleted");
+  }
+
+  function toggleTopicDone(topicId) {
+    const current = progress[topicId] || STATUS.NOT_STARTED;
+    const next = current === STATUS.COMPLETED ? STATUS.NOT_STARTED : STATUS.COMPLETED;
+    update("progress", { ...progress, [topicId]: next });
+  }
+
+  function toggleSubjectDone(subjectId) {
+    const subTopics = topics.filter(t => t.subjectId === subjectId);
+    const allDone = subTopics.every(t => (progress[t.id] || STATUS.NOT_STARTED) === STATUS.COMPLETED);
+    const newProgress = { ...progress };
+    subTopics.forEach(t => { newProgress[t.id] = allDone ? STATUS.NOT_STARTED : STATUS.COMPLETED; });
+    update("progress", newProgress);
+  }
+
+  const getTopics = (sid) => topics.filter(t => t.subjectId === sid);
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <div style={{ fontWeight: 700, fontSize: 18 }}>Subjects</div>
+        <div style={{ display: "flex", gap: 8 }}>
+          <button className="btn btn-secondary" style={{ fontSize: 13, padding: "8px 14px" }} onClick={() => setModal({ type: "add_topic" })}>+ Topic</button>
+          <button className="btn btn-primary" style={{ fontSize: 13, padding: "8px 14px" }} onClick={() => setModal({ type: "add_subject" })}>+ Subject</button>
+        </div>
+      </div>
+
+      {subjects.length === 0 && (
+        <div className="card" style={{ textAlign: "center", padding: "40px 20px", color: "var(--text3)" }}>
+          <div style={{ fontSize: 40, marginBottom: 12 }}>📚</div>
+          <div style={{ fontWeight: 600, marginBottom: 6 }}>No subjects yet</div>
+          <div style={{ fontSize: 13 }}>Add your first subject to get started</div>
+        </div>
+      )}
+
+      {subjects.map(subj => {
+        const subTopics = getTopics(subj.id);
+        const done = subTopics.filter(t => progress[t.id] === STATUS.COMPLETED).length;
+        const pct = subTopics.length > 0 ? Math.round((done / subTopics.length) * 100) : 0;
+        const color = getSubjectColor(subj.id);
+        const isExp = expanded === subj.id;
+        const isConfirming = confirmDelete === subj.id;
+
+        return (
+          <div key={subj.id} className="card" style={{ padding: 0, overflow: "hidden" }}>
+            <div style={{ padding: "16px 20px", cursor: isConfirming ? "default" : "pointer" }} onClick={() => { if (!isConfirming) setExpanded(isExp ? null : subj.id); }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                <div
+                  onClick={e => { e.stopPropagation(); toggleSubjectDone(subj.id); }}
+                  style={{ width: 22, height: 22, borderRadius: 6, border: `2px solid ${color}`, background: subTopics.length > 0 && subTopics.every(t => (progress[t.id]||STATUS.NOT_STARTED) === STATUS.COMPLETED) ? color : "transparent", flexShrink: 0, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", transition: "background 0.2s" }}
+                >
+                  {subTopics.length > 0 && subTopics.every(t => (progress[t.id]||STATUS.NOT_STARTED) === STATUS.COMPLETED) && (
+                    <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><polyline points="2,6 5,9 10,3" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                  )}
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontWeight: 600, fontSize: 15 }}>{subj.name}</div>
+                  <div style={{ fontSize: 12, color: "var(--text3)", marginTop: 2 }}>
+                    {formatTime(subj.duration || 60)} study · {subj.revisionTime > 0 ? formatTime(subj.revisionTime) + " revision" : "No revision"} · {subTopics.length} topics
+                  </div>
+                </div>
+                <div style={{ display: "flex", gap: 6 }}>
+                  <button className="icon-btn" onClick={e => { e.stopPropagation(); setModal({ type: "add_subject", editing: subj }); }}>✏️</button>
+                  <button className="icon-btn" style={{ color: isConfirming ? "#ef4444" : undefined }} onClick={e => { e.stopPropagation(); setConfirmDelete(isConfirming ? null : subj.id); }}>🗑️</button>
+                </div>
+              </div>
+              {isConfirming && (
+                <div style={{ marginTop: 12, background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 10, padding: "10px 14px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
+                  <span style={{ fontSize: 13, color: "#991b1b", fontWeight: 500 }}>Delete "{subj.name}" and all its topics?</span>
+                  <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
+                    <button className="btn" style={{ padding: "6px 14px", fontSize: 12, background: "white", border: "1px solid #fecaca", color: "#64748b", borderRadius: 8 }} onClick={e => { e.stopPropagation(); setConfirmDelete(null); }}>Cancel</button>
+                    <button className="btn" style={{ padding: "6px 14px", fontSize: 12, background: "#ef4444", color: "white", border: "none", borderRadius: 8 }} onClick={e => { e.stopPropagation(); doDeleteSubject(subj.id); }}>Delete</button>
+                  </div>
+                </div>
+              )}
+              <div style={{ marginTop: 10 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, color: "var(--text3)", marginBottom: 4 }}>
+                  <span>{done}/{subTopics.length} completed</span><span>{pct}%</span>
+                </div>
+                <div className="progress-bar">
+                  <div className="progress-fill" style={{ width: `${pct}%`, background: color }} />
+                </div>
+              </div>
+            </div>
+
+            {isExp && (
+              <div style={{ borderTop: "1px solid var(--border)", padding: "0 20px 16px" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "14px 0 10px" }}>
+                  <span className="section-title" style={{ margin: 0 }}>Topics</span>
+                  <button className="btn btn-secondary" style={{ fontSize: 12, padding: "6px 12px" }} onClick={() => setModal({ type: "add_topic", subjectId: subj.id })}>+ Topic</button>
+                </div>
+                {subTopics.length === 0 && <div style={{ fontSize: 13, color: "var(--text3)", textAlign: "center", padding: "12px 0" }}>No topics yet</div>}
+                {subTopics.map(topic => (
+                  <div key={topic.id} style={{ borderBottom: "1px solid var(--border)" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 0" }}>
+                      <div
+                        onClick={() => toggleTopicDone(topic.id)}
+                        style={{ width: 20, height: 20, borderRadius: 5, border: `2px solid ${(progress[topic.id]||STATUS.NOT_STARTED) === STATUS.COMPLETED ? "#10b981" : "var(--border)"}`, background: (progress[topic.id]||STATUS.NOT_STARTED) === STATUS.COMPLETED ? "#10b981" : "transparent", flexShrink: 0, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.2s" }}
+                      >
+                        {(progress[topic.id]||STATUS.NOT_STARTED) === STATUS.COMPLETED && (
+                          <svg width="11" height="11" viewBox="0 0 11 11" fill="none"><polyline points="1.5,5.5 4.5,8.5 9.5,2.5" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                        )}
+                      </div>
+                      <div style={{ flex: 1, opacity: (progress[topic.id]||STATUS.NOT_STARTED) === STATUS.COMPLETED ? 0.5 : 1, transition: "opacity 0.2s" }}>
+                        <div style={{ fontWeight: 500, fontSize: 14, textDecoration: (progress[topic.id]||STATUS.NOT_STARTED) === STATUS.COMPLETED ? "line-through" : "none" }}>{topic.name}</div>
+                        <div style={{ fontSize: 12, color: "var(--text3)" }}>{(topic.days||[]).join(", ") || "All days"}{topic.duration ? ` · ${topic.duration}m` : ""}</div>
+                      </div>
+                      <button className="icon-btn" onClick={() => setModal({ type: "add_topic", editing: topic, subjectId: subj.id })}>✏️</button>
+                      <button className="icon-btn" style={{ color: confirmDeleteTopic === topic.id ? "#ef4444" : undefined }} onClick={() => setConfirmDeleteTopic(confirmDeleteTopic === topic.id ? null : topic.id)}>🗑️</button>
+                    </div>
+                    {confirmDeleteTopic === topic.id && (
+                      <div style={{ background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 8, padding: "8px 12px", marginBottom: 8, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
+                        <span style={{ fontSize: 12, color: "#991b1b", fontWeight: 500 }}>Delete "{topic.name}"?</span>
+                        <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
+                          <button className="btn" style={{ padding: "5px 12px", fontSize: 12, background: "white", border: "1px solid #fecaca", color: "#64748b", borderRadius: 8 }} onClick={() => setConfirmDeleteTopic(null)}>Cancel</button>
+                          <button className="btn" style={{ padding: "5px 12px", fontSize: 12, background: "#ef4444", color: "white", border: "none", borderRadius: 8 }} onClick={() => doDeleteTopic(topic.id)}>Delete</button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function TimetableView({ subjects, topics, settings, getSubjectColor }) {
+  const [selectedDay, setSelectedDay] = useState(DAYS[new Date().getDay() === 0 ? 6 : new Date().getDay() - 1]);
+  const slots = useMemo(() => generateTimetable(subjects, topics, settings, selectedDay), [subjects, topics, settings, selectedDay]);
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+      <div style={{ fontWeight: 700, fontSize: 18 }}>Schedule</div>
+      <div style={{ display: "flex", gap: 6, overflowX: "auto", paddingBottom: 4 }}>
+        {DAYS.map(d => (
+          <button key={d} onClick={() => setSelectedDay(d)}
+            style={{ padding: "8px 14px", borderRadius: 20, fontSize: 13, fontWeight: 500, border: "none", whiteSpace: "nowrap", background: selectedDay === d ? "var(--accent)" : "var(--surface)", color: selectedDay === d ? "#fff" : "var(--text3)", cursor: "pointer", transition: "all 0.15s" }}>
+            {d.slice(0,3)}
+          </button>
+        ))}
+      </div>
+
+      {subjects.length === 0 && (
+        <div className="card" style={{ textAlign: "center", padding: "40px 20px", color: "var(--text3)" }}>
+          <div style={{ fontSize: 40, marginBottom: 12 }}>📅</div>
+          <div style={{ fontWeight: 600, marginBottom: 6 }}>No schedule yet</div>
+          <div style={{ fontSize: 13 }}>Add subjects to auto-generate your timetable</div>
+        </div>
+      )}
+
+      {slots.length === 0 && subjects.length > 0 && (
+        <div className="card" style={{ textAlign: "center", padding: "30px 20px", color: "var(--text3)" }}>
+          <div style={{ fontSize: 13 }}>No sessions fit in today's study window. Adjust your study hours in Settings.</div>
+        </div>
+      )}
+
+      {slots.map((slot, i) => {
+        const color = slot.subjectId ? getSubjectColor(slot.subjectId) : "#94a3b8";
+        return (
+          <div key={i} style={{ display: "flex", gap: 14, alignItems: "flex-start" }}>
+            <div style={{ minWidth: 70, textAlign: "right" }}>
+              <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text)" }}>{slot.start}</div>
+              <div style={{ fontSize: 11, color: "var(--text3)" }}>{slot.end}</div>
+            </div>
+            <div style={{ flex: 1, padding: "14px 16px", borderRadius: 12, background: slot.type === "break" ? "var(--surface2)" : "var(--surface)", border: `1px solid ${slot.type === "break" ? "var(--border)" : color + "40"}`, borderLeft: `4px solid ${color}` }}>
+              <div style={{ fontWeight: 600, fontSize: 14, color: slot.type === "break" ? "var(--text3)" : "var(--text)" }}>{slot.label}</div>
+              <div style={{ fontSize: 12, color: "var(--text3)", marginTop: 3 }}>
+                {formatTime(slot.duration)} · {slot.type === "break" ? "Rest" : slot.type === "revision" ? "Revision" : "Study"}
+              </div>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function ExamsView({ exams, subjects, update, setModal, showToast, getSubjectColor }) {
+  const [confirmDeleteExam, setConfirmDeleteExam] = useState(null);
+
+  function doDeleteExam(id) {
+    update("exams", exams.filter(e => e.id !== id));
+    setConfirmDeleteExam(null);
+    showToast("Exam deleted");
+  }
+
+  const sorted = [...exams].sort((a,b) => new Date(a.date) - new Date(b.date));
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <div style={{ fontWeight: 700, fontSize: 18 }}>Exams</div>
+        <button className="btn btn-primary" style={{ fontSize: 13, padding: "8px 16px" }} onClick={() => setModal({ type: "add_exam" })}>+ Add Exam</button>
+      </div>
+
+      {exams.length === 0 && (
+        <div className="card" style={{ textAlign: "center", padding: "40px 20px", color: "var(--text3)" }}>
+          <div style={{ fontSize: 40, marginBottom: 12 }}>🎯</div>
+          <div style={{ fontWeight: 600, marginBottom: 6 }}>No exams scheduled</div>
+          <div style={{ fontSize: 13 }}>Add your upcoming exams to track countdowns</div>
+        </div>
+      )}
+
+      {sorted.map(exam => {
+        const days = daysUntil(exam.date);
+        const passed = days < 0;
+        return (
+          <div key={exam.id} className="card" style={{ opacity: passed ? 0.55 : 1 }}>
+            <div style={{ display: "flex", alignItems: "flex-start", gap: 14 }}>
+              <div style={{ width: 50, height: 50, borderRadius: 12, background: passed ? "#f1f5f9" : days === 0 ? "#fef2f2" : days <= 3 ? "#fffbeb" : "#ede9fe", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                <div style={{ fontSize: 18, fontWeight: 700, color: passed ? "#94a3b8" : days === 0 ? "#ef4444" : days <= 3 ? "#d97706" : "#7c3aed" }}>
+                  {passed ? "✓" : days === 0 ? "!" : days === 1 ? "1" : days}
+                </div>
+                <div style={{ fontSize: 10, color: "var(--text3)" }}>{passed ? "done" : days === 0 ? "today" : days === 1 ? "day" : "days"}</div>
+              </div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontWeight: 600, fontSize: 15 }}>{exam.name}</div>
+                <div style={{ fontSize: 13, color: "var(--text3)", marginTop: 3 }}>{exam.subject}</div>
+                <div style={{ fontSize: 12, color: "var(--text3)", marginTop: 4 }}>
+                  {new Date(exam.date).toLocaleDateString("en-US",{weekday:"long", year:"numeric", month:"long", day:"numeric"})}
+                  {exam.time && ` · ${exam.time}`}
+                </div>
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                <button className="icon-btn" onClick={() => setModal({ type: "add_exam", editing: exam })}>✏️</button>
+                <button className="icon-btn" style={{ color: confirmDeleteExam === exam.id ? "#ef4444" : undefined }} onClick={() => setConfirmDeleteExam(confirmDeleteExam === exam.id ? null : exam.id)}>🗑️</button>
+              </div>
+            </div>
+            {confirmDeleteExam === exam.id && (
+              <div style={{ marginTop: 10, background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 10, padding: "10px 14px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
+                <span style={{ fontSize: 13, color: "#991b1b", fontWeight: 500 }}>Delete this exam?</span>
+                <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
+                  <button className="btn" style={{ padding: "6px 14px", fontSize: 12, background: "white", border: "1px solid #fecaca", color: "#64748b", borderRadius: 8 }} onClick={() => setConfirmDeleteExam(null)}>Cancel</button>
+                  <button className="btn" style={{ padding: "6px 14px", fontSize: 12, background: "#ef4444", color: "white", border: "none", borderRadius: 8 }} onClick={() => doDeleteExam(exam.id)}>Delete</button>
+                </div>
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function ProgressView({ subjects, topics, progress, update, getSubjectColor, recordStreak }) {
+  function setStatus(topicId, status) {
+    update("progress", { ...progress, [topicId]: status });
+    if (status === STATUS.COMPLETED) recordStreak();
+  }
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+      <div style={{ fontWeight: 700, fontSize: 18 }}>Progress</div>
+
+      {subjects.length === 0 && (
+        <div className="card" style={{ textAlign: "center", padding: "40px 20px", color: "var(--text3)" }}>
+          <div style={{ fontSize: 40, marginBottom: 12 }}>📊</div>
+          <div style={{ fontWeight: 600, marginBottom: 6 }}>Nothing to track yet</div>
+          <div style={{ fontSize: 13 }}>Add subjects and topics to track your progress</div>
+        </div>
+      )}
+
+      {subjects.map(subj => {
+        const subTopics = topics.filter(t => t.subjectId === subj.id);
+        if (subTopics.length === 0) return null;
+        const color = getSubjectColor(subj.id);
+        const done = subTopics.filter(t => progress[t.id] === STATUS.COMPLETED).length;
+        const pct = Math.round((done / subTopics.length) * 100);
+
+        return (
+          <div key={subj.id} className="card">
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <div style={{ width: 10, height: 10, borderRadius: "50%", background: color }} />
+                <span style={{ fontWeight: 600, fontSize: 15 }}>{subj.name}</span>
+              </div>
+              <span style={{ fontWeight: 700, fontSize: 14, color: color }}>{pct}%</span>
+            </div>
+            <div className="progress-bar" style={{ marginBottom: 14 }}>
+              <div className="progress-fill" style={{ width: `${pct}%`, background: color }} />
+            </div>
+            {subTopics.map(topic => {
+              const s = progress[topic.id] || STATUS.NOT_STARTED;
+              return (
+                <div key={topic.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 0", borderBottom: "1px solid var(--border)" }}>
+                  <div style={{ width: 10, height: 10, borderRadius: "50%", background: STATUS_COLORS[s], flexShrink: 0 }} />
+                  <div style={{ flex: 1, fontSize: 14, fontWeight: 500 }}>{topic.name}</div>
+                  <select value={s} onChange={e => setStatus(topic.id, e.target.value)}
+                    style={{ width: "auto", padding: "5px 8px", fontSize: 12 }}>
+                    {Object.entries(STATUS_LABELS).map(([k,v]) => <option key={k} value={k}>{v}</option>)}
+                  </select>
+                </div>
+              );
+            })}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function SettingsView({ settings, update, showToast }) {
+  const [start, setStart] = useState(settings.studyStart || "16:00");
+  const [end, setEnd] = useState(settings.studyEnd || "21:00");
+
+  function saveStudyHours() {
+    if (start >= end) { showToast("End time must be after start time", "error"); return; }
+    update("settings", { ...settings, studyStart: start, studyEnd: end });
+    showToast("Study hours saved");
+  }
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+      <div style={{ fontWeight: 700, fontSize: 18 }}>Settings</div>
+
+      <div className="card">
+        <div style={{ fontWeight: 600, fontSize: 15, marginBottom: 16 }}>Study Hours</div>
+        <label>Study Start Time</label>
+        <input type="time" value={start} onChange={e => setStart(e.target.value)} />
+        <label>Study End Time</label>
+        <input type="time" value={end} onChange={e => setEnd(e.target.value)} />
+        <button className="btn btn-primary" style={{ marginTop: 14, width: "100%" }} onClick={saveStudyHours}>Save Hours</button>
+      </div>
+
+      <div className="card">
+        <div style={{ fontWeight: 600, fontSize: 15, marginBottom: 14 }}>Appearance</div>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <span style={{ fontSize: 14 }}>Theme</span>
+          <div style={{ display: "flex", gap: 8 }}>
+            {["light","dark"].map(t => (
+              <button key={t} className={`btn ${settings.theme === t ? "btn-primary" : "btn-secondary"}`}
+                style={{ padding: "8px 16px", fontSize: 13 }}
+                onClick={() => update("settings", { ...settings, theme: t })}>
+                {t === "light" ? "☀️ Light" : "🌙 Dark"}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <div className="card">
+        <div style={{ fontWeight: 600, fontSize: 15, marginBottom: 4 }}>About</div>
+        <div style={{ fontSize: 13, color: "var(--text3)", lineHeight: 1.7 }}>
+          Acadence helps you manage your study sessions, track topics, and stay prepared for exams. All data is stored locally on your device.
+        </div>
+        <div style={{ marginTop: 12, fontSize: 12, color: "var(--text3)" }}>Version 1.0.0 · No AI · No external services</div>
+      </div>
+    </div>
+  );
+}
+
+// ---- Modals ----
+
+function SubjectModal({ data, update, setModal, showToast, editing }) {
+  const [name, setName] = useState(editing?.name || "");
+  const [duration, setDuration] = useState(editing?.duration || 60);
+  const [revisionTime, setRevisionTime] = useState(editing?.revisionTime || 0);
+
+  function save() {
+    if (!name.trim()) { showToast("Subject name required", "error"); return; }
+    if (editing) {
+      update("subjects", data.subjects.map(s => s.id === editing.id ? { ...s, name: name.trim(), duration: Number(duration), revisionTime: Number(revisionTime) } : s));
+      showToast("Subject updated");
+    } else {
+      update("subjects", [...data.subjects, { id: uid(), name: name.trim(), duration: Number(duration), revisionTime: Number(revisionTime) }]);
+      showToast("Subject added");
+    }
+    setModal(null);
+  }
+
+  return (
+    <div>
+      <div style={{ fontWeight: 700, fontSize: 17, marginBottom: 20 }}>{editing ? "Edit Subject" : "Add Subject"}</div>
+      <label>Subject Name</label>
+      <input value={name} onChange={e => setName(e.target.value)} placeholder="e.g. Mathematics" autoFocus />
+      <label>Daily Study Duration (minutes)</label>
+      <input type="number" value={duration} onChange={e => setDuration(e.target.value)} min={10} max={300} />
+      <label>Daily Revision Time (minutes, 0 to skip)</label>
+      <input type="number" value={revisionTime} onChange={e => setRevisionTime(e.target.value)} min={0} max={120} />
+      <div style={{ display: "flex", gap: 10, marginTop: 20 }}>
+        <button className="btn btn-secondary" style={{ flex: 1 }} onClick={() => setModal(null)}>Cancel</button>
+        <button className="btn btn-primary" style={{ flex: 1 }} onClick={save}>{editing ? "Save" : "Add Subject"}</button>
+      </div>
+    </div>
+  );
+}
+
+function TopicModal({ data, update, setModal, showToast, editing, subjectId }) {
+  const [name, setName] = useState(editing?.name || "");
+  const [selSubjectId, setSelSubjectId] = useState(editing?.subjectId || subjectId || (data.subjects[0]?.id || ""));
+  const [duration, setDuration] = useState(editing?.duration ?? "");
+  const [selectedDays, setSelectedDays] = useState(editing?.days || []);
+
+  function toggleDay(d) {
+    setSelectedDays(prev => prev.includes(d) ? prev.filter(x => x !== d) : [...prev, d]);
+  }
+
+  function save() {
+    if (!name.trim()) { showToast("Topic name required", "error"); return; }
+    if (!selSubjectId) { showToast("Please select a subject", "error"); return; }
+    const dur = duration === "" ? null : Number(duration);
+    if (dur !== null && (isNaN(dur) || dur < 5)) { showToast("Time limit must be at least 5 minutes", "error"); return; }
+    if (editing) {
+      update("topics", data.topics.map(t => t.id === editing.id ? { ...t, name: name.trim(), subjectId: selSubjectId, duration: dur, days: selectedDays } : t));
+      showToast("Topic updated");
+    } else {
+      update("topics", [...data.topics, { id: uid(), name: name.trim(), subjectId: selSubjectId, duration: dur, days: selectedDays }]);
+      showToast("Topic added");
+    }
+    setModal(null);
+  }
+
+  const selSubj = data.subjects.find(s => s.id === selSubjectId);
+
+  return (
+    <div>
+      <div style={{ fontWeight: 700, fontSize: 17, marginBottom: 20 }}>{editing ? "Edit Topic" : "Add Topic"}</div>
+
+      <label>Subject</label>
+      {data.subjects.length === 0 ? (
+        <div style={{ fontSize: 13, color: "#ef4444", padding: "10px 0" }}>No subjects yet — add a subject first.</div>
+      ) : (
+        <select value={selSubjectId} onChange={e => setSelSubjectId(e.target.value)}>
+          {data.subjects.map(s => (
+            <option key={s.id} value={s.id}>{s.name}</option>
+          ))}
+        </select>
+      )}
+
+      <label>Topic Name</label>
+      <input value={name} onChange={e => setName(e.target.value)} placeholder="e.g. Quadratic Equations" autoFocus />
+
+      <label>Time Limit (minutes)</label>
+      <input
+        type="number"
+        value={duration}
+        onChange={e => setDuration(e.target.value)}
+        min={5} max={300}
+        placeholder={selSubj ? `Default: ${selSubj.duration || 60} min (from subject)` : "e.g. 45"}
+      />
+      <div style={{ fontSize: 11, color: duration === "" ? "var(--text3)" : "var(--accent)", marginTop: 4 }}>
+        {duration === ""
+          ? `Leave blank to inherit the subject duration (${selSubj?.duration || 60} min)`
+          : `This topic will be scheduled for ${duration} min in the timetable`}
+      </div>
+
+      <label>Assign to Days (leave empty for all days)</label>
+      <div className="chip-group" style={{ marginTop: 8 }}>
+        {DAYS.map(d => (
+          <button key={d} className={`chip ${selectedDays.includes(d) ? "active" : "inactive"}`}
+            style={{ background: selectedDays.includes(d) ? "var(--accent)" : "var(--surface2)", color: selectedDays.includes(d) ? "#fff" : "var(--text)", border: "1.5px solid " + (selectedDays.includes(d) ? "var(--accent)" : "var(--border)") }}
+            onClick={() => toggleDay(d)}>
+            {d.slice(0,3)}
+          </button>
+        ))}
+      </div>
+
+      <div style={{ display: "flex", gap: 10, marginTop: 20 }}>
+        <button className="btn btn-secondary" style={{ flex: 1 }} onClick={() => setModal(null)}>Cancel</button>
+        <button className="btn btn-primary" style={{ flex: 1 }} onClick={save} disabled={data.subjects.length === 0}>
+          {editing ? "Save Changes" : "Add Topic"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function ExamModal({ data, update, setModal, showToast, editing }) {
+  const [name, setName] = useState(editing?.name || "");
+  const [subject, setSubject] = useState(editing?.subject || "");
+  const [date, setDate] = useState(editing?.date || "");
+  const [time, setTime] = useState(editing?.time || "");
+
+  function save() {
+    if (!name.trim()) { showToast("Exam name required", "error"); return; }
+    if (!date) { showToast("Exam date required", "error"); return; }
+    if (editing) {
+      update("exams", data.exams.map(e => e.id === editing.id ? { ...e, name: name.trim(), subject: subject.trim(), date, time } : e));
+      showToast("Exam updated");
+    } else {
+      update("exams", [...data.exams, { id: uid(), name: name.trim(), subject: subject.trim(), date, time }]);
+      showToast("Exam added");
+    }
+    setModal(null);
+  }
+
+  const todayStr = new Date().toISOString().split("T")[0];
+
+  return (
+    <div>
+      <div style={{ fontWeight: 700, fontSize: 17, marginBottom: 20 }}>{editing ? "Edit Exam" : "Add Exam"}</div>
+      <label>Exam Name</label>
+      <input value={name} onChange={e => setName(e.target.value)} placeholder="e.g. Mathematics Final" autoFocus />
+      <label>Subject</label>
+      {data.subjects.length > 0 ? (
+        <select value={subject} onChange={e => setSubject(e.target.value)}>
+          <option value="">Select subject</option>
+          {data.subjects.map(s => <option key={s.id} value={s.name}>{s.name}</option>)}
+          <option value="Other">Other</option>
+        </select>
+      ) : (
+        <input value={subject} onChange={e => setSubject(e.target.value)} placeholder="e.g. Mathematics" />
+      )}
+      <label>Exam Date</label>
+      <input type="date" value={date} onChange={e => setDate(e.target.value)} min={todayStr} />
+      <label>Exam Time (optional)</label>
+      <input type="time" value={time} onChange={e => setTime(e.target.value)} />
+      <div style={{ display: "flex", gap: 10, marginTop: 20 }}>
+        <button className="btn btn-secondary" style={{ flex: 1 }} onClick={() => setModal(null)}>Cancel</button>
+        <button className="btn btn-primary" style={{ flex: 1 }} onClick={save}>{editing ? "Save" : "Add Exam"}</button>
+      </div>
+    </div>
+  );
+}
+
+// ---- Icons ----
+function HomeIcon() { return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>; }
+function BookIcon() { return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>; }
+function CalIcon() { return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>; }
+function StarIcon() { return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>; }
+function ChartIcon() { return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>; }
