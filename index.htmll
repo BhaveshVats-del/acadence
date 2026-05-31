@@ -1,0 +1,969 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Acadence</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#f0f2ff;
+  --surface:#fff;
+  --surface2:#f5f6fd;
+  --border:rgba(90,80,210,0.1);
+  --text:#1a1740;
+  --muted:#8b8fba;
+  --accent:#5a50d2;
+  --accent2:#7c74e8;
+  --green:#10b981;
+  --amber:#f59e0b;
+  --red:#ef4444;
+  --shadow:0 2px 20px rgba(90,80,210,0.1);
+  --r:16px;
+  --font-head:'Syne',sans-serif;
+  --font-body:'DM Sans',sans-serif;
+}
+[data-dark]{
+  --bg:#0d0c1a;
+  --surface:#151428;
+  --surface2:#1e1c30;
+  --border:rgba(120,110,255,0.15);
+  --text:#e8e6ff;
+  --muted:#6b68a0;
+  --accent:#7c74e8;
+  --accent2:#a09cff;
+  --shadow:0 4px 30px rgba(0,0,0,0.5);
+}
+body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-height:100vh;transition:background .3s,color .3s;-webkit-font-smoothing:antialiased}
+h1,h2,h3,h4{font-family:var(--font-head)}
+
+/* layout */
+#app{max-width:560px;margin:0 auto;padding-bottom:90px;min-height:100vh}
+.header{padding:20px 20px 0;display:flex;align-items:center;justify-content:space-between;margin-bottom:4px}
+.logo{font-family:var(--font-head);font-size:22px;font-weight:800;color:var(--accent);letter-spacing:-0.5px}
+.date-lbl{font-size:12px;color:var(--muted);margin-top:1px}
+.page{padding:16px;display:flex;flex-direction:column;gap:14px}
+.page.hidden{display:none}
+
+/* bottom nav */
+#nav{position:fixed;bottom:0;left:0;right:0;background:var(--surface);border-top:1px solid var(--border);display:flex;justify-content:space-around;padding:8px 0 12px;z-index:50;max-width:100%}
+.nav-btn{display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 14px;border-radius:12px;font-size:11px;font-weight:600;font-family:var(--font-head);color:var(--muted);background:none;border:none;cursor:pointer;transition:all .15s}
+.nav-btn svg{width:22px;height:22px}
+.nav-btn.active{background:var(--accent);color:#fff}
+
+/* cards */
+.card{background:var(--surface);border-radius:var(--r);border:1px solid var(--border);padding:18px;box-shadow:var(--shadow)}
+.card-flush{background:var(--surface);border-radius:var(--r);border:1px solid var(--border);box-shadow:var(--shadow);overflow:hidden}
+
+/* buttons */
+.btn{padding:10px 20px;border-radius:10px;font-size:14px;font-weight:600;font-family:var(--font-body);border:none;cursor:pointer;transition:opacity .15s,transform .1s}
+.btn:active{transform:scale(.97)}
+.btn-primary{background:var(--accent);color:#fff}
+.btn-secondary{background:var(--surface2);color:var(--text);border:1.5px solid var(--border)}
+.btn-sm{padding:7px 14px;font-size:13px}
+.btn-danger-inline{background:#fef2f2;color:var(--red);border:1px solid #fecaca}
+
+/* form */
+label{font-size:12px;font-weight:600;color:var(--muted);display:block;margin-top:12px;margin-bottom:5px;text-transform:uppercase;letter-spacing:.06em}
+input,select,textarea{font-family:var(--font-body);background:var(--surface2);border:1.5px solid var(--border);color:var(--text);border-radius:10px;padding:10px 14px;font-size:14px;width:100%;outline:none;transition:border-color .2s}
+input:focus,select:focus{border-color:var(--accent)}
+select option{background:var(--surface);color:var(--text)}
+
+/* progress bar */
+.pbar{height:6px;border-radius:10px;background:var(--surface2);overflow:hidden}
+.pfill{height:100%;border-radius:10px;background:linear-gradient(90deg,var(--accent),var(--accent2));transition:width .4s}
+
+/* badge */
+.badge{display:inline-flex;align-items:center;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;font-family:var(--font-head)}
+
+/* section title */
+.sec{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.09em;margin-bottom:10px;font-family:var(--font-head)}
+
+/* slot */
+.slot{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:12px;border-left:4px solid;background:var(--surface2);margin-bottom:8px}
+.slot:last-child{margin-bottom:0}
+
+/* list item */
+.li{display:flex;align-items:center;justify-content:space-between;padding:13px 0;border-bottom:1px solid var(--border)}
+.li:last-child{border-bottom:none}
+
+/* icon btn */
+.ibtn{background:none;border:none;color:var(--muted);padding:6px;border-radius:8px;cursor:pointer;font-size:17px;line-height:1;transition:background .15s}
+.ibtn:hover{background:var(--surface2);color:var(--text)}
+
+/* confirm strip */
+.confirm-strip{background:#fef2f2;border:1px solid #fecaca;border-radius:10px;padding:10px 14px;display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:8px}
+.confirm-strip span{font-size:13px;color:#991b1b;font-weight:500}
+.confirm-strip .actions{display:flex;gap:6px;flex-shrink:0}
+
+/* modal */
+#modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:flex-end;justify-content:center;z-index:100;animation:fadeIn .2s}
+#modal-overlay.hidden{display:none}
+#modal-sheet{background:var(--surface);border-radius:22px 22px 0 0;padding:24px;width:100%;max-width:560px;max-height:92vh;overflow-y:auto;animation:slideUp .25s cubic-bezier(.32,.72,0,1)}
+.modal-title{font-family:var(--font-head);font-size:18px;font-weight:700;margin-bottom:18px}
+
+/* toast */
+#toast{position:fixed;bottom:88px;left:50%;transform:translateX(-50%);background:var(--surface);border:1px solid var(--border);padding:10px 20px;border-radius:30px;font-size:13px;font-weight:500;box-shadow:var(--shadow);z-index:200;white-space:nowrap;animation:fadeIn .2s;transition:opacity .3s}
+#toast.hidden{display:none}
+
+/* checkbox */
+.chk{width:22px;height:22px;border-radius:6px;border:2px solid var(--border);background:transparent;flex-shrink:0;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .2s}
+.chk.done{background:var(--green);border-color:var(--green)}
+.chk.partial{background:var(--accent);border-color:var(--accent)}
+
+/* day chips */
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.chip{padding:5px 12px;border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;border:1.5px solid var(--border);background:var(--surface2);color:var(--muted);transition:all .15s;font-family:var(--font-head)}
+.chip.on{background:var(--accent);border-color:var(--accent);color:#fff}
+
+/* streak dots */
+.streak-grid{display:flex;gap:6px;justify-content:space-between}
+.streak-dot{flex:1;display:flex;flex-direction:column;align-items:center;gap:5px}
+.streak-dot .dot{width:100%;aspect-ratio:1;border-radius:7px;background:var(--surface2);border:1px solid var(--border);transition:background .3s;display:flex;align-items:center;justify-content:center}
+.streak-dot .dot.active{background:var(--streak-color,var(--accent));border-color:var(--streak-color,var(--accent))}
+.streak-dot .dlbl{font-size:10px;color:var(--muted);font-weight:600;font-family:var(--font-head)}
+
+/* subject color dot */
+.sdot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+
+/* exam countdown */
+.countdown{display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:700;font-family:var(--font-head)}
+
+/* day selector */
+.day-tabs{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px}
+.day-tab{padding:7px 14px;border-radius:20px;font-size:13px;font-weight:600;font-family:var(--font-head);border:none;background:var(--surface);color:var(--muted);cursor:pointer;white-space:nowrap;transition:all .15s;flex-shrink:0}
+.day-tab.active{background:var(--accent);color:#fff}
+
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+
+.strikethrough{text-decoration:line-through;opacity:.5}
+.row-flex{display:flex;align-items:center;gap:10px}
+.stat-num{font-family:var(--font-head);font-size:26px;font-weight:800}
+.grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+
+/* timetable timeline */
+.tl-row{display:flex;gap:14px;align-items:flex-start;margin-bottom:10px}
+.tl-time{min-width:66px;text-align:right;padding-top:14px}
+.tl-time .t1{font-size:13px;font-weight:600;font-family:var(--font-head)}
+.tl-time .t2{font-size:11px;color:var(--muted)}
+.tl-block{flex:1;padding:14px 16px;border-radius:12px;border-left:4px solid;background:var(--surface)}
+.tl-block .name{font-weight:600;font-size:14px;font-family:var(--font-head)}
+.tl-block .meta{font-size:12px;color:var(--muted);margin-top:3px}
+
+/* progress status select */
+.status-sel{width:auto;padding:5px 8px;font-size:12px;border-radius:8px}
+
+@media(max-width:480px){.page{padding:12px}.card{padding:14px}#modal-sheet{padding:20px 16px}}
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="header">
+    <div>
+      <div class="logo">Acadence</div>
+      <div class="date-lbl" id="today-lbl"></div>
+    </div>
+    <button class="btn btn-secondary btn-sm" id="theme-btn" onclick="toggleTheme()">🌙</button>
+  </div>
+
+  <!-- DASHBOARD -->
+  <div class="page" id="page-dashboard">
+    <div class="grid-3" id="dash-stats"></div>
+    <div id="streak-card"></div>
+    <div class="card" id="progress-card"></div>
+    <div class="card" id="today-card"></div>
+    <div class="card" id="exams-card" style="display:none"></div>
+  </div>
+
+  <!-- SUBJECTS -->
+  <div class="page hidden" id="page-subjects">
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <h2 style="font-size:20px">Subjects</h2>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-secondary btn-sm" onclick="openModal('topic')">+ Topic</button>
+        <button class="btn btn-primary btn-sm" onclick="openModal('subject')">+ Subject</button>
+      </div>
+    </div>
+    <div id="subjects-list"></div>
+  </div>
+
+  <!-- TIMETABLE -->
+  <div class="page hidden" id="page-timetable">
+    <h2 style="font-size:20px">Schedule</h2>
+    <div class="day-tabs" id="day-tabs"></div>
+    <div id="timetable-slots"></div>
+  </div>
+
+  <!-- EXAMS -->
+  <div class="page hidden" id="page-exams">
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <h2 style="font-size:20px">Exams</h2>
+      <button class="btn btn-primary btn-sm" onclick="openModal('exam')">+ Add Exam</button>
+    </div>
+    <div id="exams-list"></div>
+  </div>
+
+  <!-- PROGRESS -->
+  <div class="page hidden" id="page-progress">
+    <h2 style="font-size:20px">Progress</h2>
+    <div id="progress-list"></div>
+  </div>
+
+  <!-- SETTINGS -->
+  <div class="page hidden" id="page-settings">
+    <h2 style="font-size:20px">Settings</h2>
+    <div class="card">
+      <div style="font-weight:600;font-size:15px;margin-bottom:14px;font-family:var(--font-head)">Study Hours</div>
+      <label>Study Start Time</label>
+      <input type="time" id="sett-start" value="16:00"/>
+      <label>Study End Time</label>
+      <input type="time" id="sett-end" value="21:00"/>
+      <button class="btn btn-primary" style="margin-top:14px;width:100%" onclick="saveSettings()">Save Hours</button>
+    </div>
+    <div class="card">
+      <div style="font-weight:600;font-size:15px;margin-bottom:14px;font-family:var(--font-head)">Appearance</div>
+      <div style="display:flex;align-items:center;justify-content:space-between">
+        <span>Theme</span>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-sm" id="theme-light-btn" onclick="setTheme('light')">☀️ Light</button>
+          <button class="btn btn-sm" id="theme-dark-btn" onclick="setTheme('dark')">🌙 Dark</button>
+        </div>
+      </div>
+    </div>
+    <div class="card" style="font-size:13px;color:var(--muted);line-height:1.7">
+      <div style="font-weight:600;font-size:15px;color:var(--text);margin-bottom:6px;font-family:var(--font-head)">About</div>
+      Acadence helps you manage study sessions, track topics, and stay prepared for exams. All data is stored locally on your device.
+      <div style="margin-top:10px;font-size:11px">Version 1.0.0 · No AI · No external services</div>
+    </div>
+  </div>
+</div>
+
+<!-- BOTTOM NAV -->
+<div id="nav">
+  <button class="nav-btn active" data-page="dashboard" onclick="goTo('dashboard')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>Home
+  </button>
+  <button class="nav-btn" data-page="subjects" onclick="goTo('subjects')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>Subjects
+  </button>
+  <button class="nav-btn" data-page="timetable" onclick="goTo('timetable')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Schedule
+  </button>
+  <button class="nav-btn" data-page="exams" onclick="goTo('exams')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>Exams
+  </button>
+  <button class="nav-btn" data-page="progress" onclick="goTo('progress')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>Progress
+  </button>
+</div>
+
+<!-- MODAL -->
+<div id="modal-overlay" class="hidden" onclick="closeModalIfOutside(event)">
+  <div id="modal-sheet"></div>
+</div>
+
+<!-- TOAST -->
+<div id="toast" class="hidden"></div>
+
+<script>
+// ─── DATA ───────────────────────────────────────────────
+const KEY = 'acadence_v1';
+const DAYS = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
+const COLORS = ['#5a50d2','#10b981','#f59e0b','#ef4444','#8b5cf6','#06b6d4','#ec4899','#14b8a6'];
+const STATUS_LABELS = { not_started:'Not Started', in_progress:'In Progress', completed:'Completed' };
+
+let db = {
+  subjects: [], topics: [], exams: [], progress: {},
+  streak: { current: 0, longest: 0, lastActiveDate: null, history: {} },
+  settings: { theme: 'light', studyStart: '16:00', studyEnd: '21:00' }
+};
+
+function load() {
+  try {
+    const raw = localStorage.getItem(KEY);
+    if (raw) db = Object.assign({}, db, JSON.parse(raw));
+  } catch(e) {}
+  db.streak = db.streak || { current:0, longest:0, lastActiveDate:null, history:{} };
+}
+
+function save() {
+  try { localStorage.setItem(KEY, JSON.stringify(db)); } catch(e) {}
+}
+
+function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2); }
+
+// ─── DATE / STREAK UTILS ────────────────────────────────
+function todayKey() {
+  const d = new Date();
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+function yesterdayKey() {
+  const d = new Date(); d.setDate(d.getDate()-1);
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+function checkStreak() {
+  const s = db.streak, today = todayKey(), yest = yesterdayKey();
+  if (s.lastActiveDate === today) return;
+  if (s.lastActiveDate && s.lastActiveDate < yest) {
+    db.streak.current = 0; save();
+  }
+}
+function recordStreak() {
+  const s = db.streak, today = todayKey(), yest = yesterdayKey();
+  if (s.lastActiveDate === today) return;
+  const newCurrent = (s.lastActiveDate === yest) ? s.current + 1 : 1;
+  db.streak = { ...s, current: newCurrent, longest: Math.max(s.longest||0, newCurrent), lastActiveDate: today, history: { ...(s.history||{}), [today]: true } };
+  save();
+}
+function getSubjectColor(id) {
+  const idx = db.subjects.findIndex(s => s.id === id);
+  return COLORS[idx % COLORS.length] || '#5a50d2';
+}
+function daysUntil(dateStr) {
+  const today = new Date(); today.setHours(0,0,0,0);
+  const d = new Date(dateStr+'T00:00:00'); d.setHours(0,0,0,0);
+  return Math.ceil((d - today) / 86400000);
+}
+function fmtTime(mins) {
+  const h = Math.floor(mins/60), m = mins%60;
+  if (!h) return m+'m';
+  if (!m) return h+'h';
+  return h+'h '+m+'m';
+}
+function addMins(t, mins) {
+  const [h,m] = t.split(':').map(Number);
+  const tot = h*60 + m + mins;
+  return String(Math.floor(tot/60)%24).padStart(2,'0')+':'+String(tot%60).padStart(2,'0');
+}
+function t2m(t) { const [h,m]=t.split(':').map(Number); return h*60+m; }
+
+// ─── TIMETABLE GENERATOR ────────────────────────────────
+function genTimetable(dayName) {
+  const slots = [], endMins = t2m(db.settings.studyEnd||'21:00');
+  let cur = db.settings.studyStart||'16:00';
+  const sMap = {}; db.subjects.forEach(s => sMap[s.id] = s);
+  const dayTopics = db.topics.filter(t => !t.days || t.days.length === 0 || t.days.includes(dayName));
+  const scheduled = [];
+  const seenSubjs = new Set();
+  dayTopics.forEach(t => {
+    const s = sMap[t.subjectId]; if (!s) return;
+    seenSubjs.add(s.id);
+    scheduled.push({ label: s.name+' – '+t.name, duration: t.duration||s.duration||60, type:'study', subjectId:s.id });
+  });
+  db.subjects.forEach(s => {
+    if (!seenSubjs.has(s.id) && db.topics.filter(t=>t.subjectId===s.id).length===0)
+      scheduled.push({ label:s.name, duration:s.duration||60, type:'study', subjectId:s.id });
+  });
+  db.subjects.forEach(s => {
+    if (s.revisionTime > 0)
+      scheduled.push({ label:s.name+' Revision', duration:s.revisionTime, type:'revision', subjectId:s.id });
+  });
+  let bk = 0;
+  scheduled.forEach((item, i) => {
+    if (t2m(cur)+item.duration > endMins) return;
+    slots.push({ ...item, start:cur, end:addMins(cur,item.duration) });
+    cur = addMins(cur, item.duration);
+    if (i < scheduled.length-1 && bk < 3 && t2m(cur)+15 <= endMins) {
+      slots.push({ label:'Break', duration:15, type:'break', start:cur, end:addMins(cur,15) });
+      cur = addMins(cur,15); bk++;
+    }
+  });
+  return slots;
+}
+
+// ─── NAVIGATION ─────────────────────────────────────────
+let currentPage = 'dashboard';
+function goTo(page) {
+  document.querySelectorAll('.page').forEach(p => p.classList.add('hidden'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('page-'+page).classList.remove('hidden');
+  document.querySelector(`[data-page="${page}"]`).classList.add('active');
+  currentPage = page;
+  renderPage(page);
+}
+
+function renderPage(page) {
+  if (page==='dashboard') renderDashboard();
+  else if (page==='subjects') renderSubjects();
+  else if (page==='timetable') renderTimetable();
+  else if (page==='exams') renderExams();
+  else if (page==='progress') renderProgress();
+  else if (page==='settings') renderSettings();
+}
+
+// ─── TOAST ──────────────────────────────────────────────
+let toastTimer;
+function toast(msg, type='ok') {
+  const el = document.getElementById('toast');
+  el.textContent = (type==='err'?'⚠️ ':'✓ ') + msg;
+  el.style.color = type==='err'?'var(--red)':'var(--green)';
+  el.classList.remove('hidden');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>el.classList.add('hidden'), 2800);
+}
+
+// ─── THEME ──────────────────────────────────────────────
+function toggleTheme() { setTheme(db.settings.theme==='dark'?'light':'dark'); }
+function setTheme(t) {
+  db.settings.theme = t;
+  document.documentElement.toggleAttribute('data-dark', t==='dark');
+  document.getElementById('theme-btn').textContent = t==='dark'?'☀️':'🌙';
+  save();
+  if (currentPage==='settings') renderSettings();
+}
+function renderSettings() {
+  document.getElementById('sett-start').value = db.settings.studyStart||'16:00';
+  document.getElementById('sett-end').value = db.settings.studyEnd||'21:00';
+  const isDark = db.settings.theme==='dark';
+  document.getElementById('theme-light-btn').className = 'btn btn-sm '+(isDark?'btn-secondary':'btn-primary');
+  document.getElementById('theme-dark-btn').className = 'btn btn-sm '+(isDark?'btn-primary':'btn-secondary');
+}
+function saveSettings() {
+  const s = document.getElementById('sett-start').value;
+  const e = document.getElementById('sett-end').value;
+  if (s >= e) { toast('End must be after start','err'); return; }
+  db.settings.studyStart = s; db.settings.studyEnd = e;
+  save(); toast('Study hours saved');
+}
+
+// ─── DASHBOARD ──────────────────────────────────────────
+function renderDashboard() {
+  // date label
+  document.getElementById('today-lbl').textContent = new Date().toLocaleDateString('en-US',{weekday:'long',month:'short',day:'numeric'});
+  // stats
+  const done = db.topics.filter(t=>(db.progress[t.id]||'not_started')==='completed').length;
+  document.getElementById('dash-stats').innerHTML = [
+    {l:'Subjects',v:db.subjects.length,c:'var(--accent)'},
+    {l:'Topics',v:db.topics.length,c:'var(--green)'},
+    {l:'Exams',v:db.exams.filter(e=>daysUntil(e.date)>=0).length,c:'var(--amber)'},
+  ].map(s=>`<div class="card" style="text-align:center;padding:14px 10px">
+    <div class="stat-num" style="color:${s.c}">${s.v}</div>
+    <div style="font-size:12px;color:var(--muted);margin-top:2px">${s.l}</div>
+  </div>`).join('');
+
+  // streak
+  renderStreakCard();
+
+  // progress
+  const total = db.topics.length;
+  const pct = total>0?Math.round((done/total)*100):0;
+  document.getElementById('progress-card').innerHTML = `
+    <div style="display:flex;justify-content:space-between;margin-bottom:10px">
+      <span style="font-weight:600;font-size:15px;font-family:var(--font-head)">Overall Progress</span>
+      <span style="font-weight:700;color:var(--accent)">${pct}%</span>
+    </div>
+    <div class="pbar"><div class="pfill" style="width:${pct}%"></div></div>
+    <div style="font-size:12px;color:var(--muted);margin-top:8px">${done} of ${total} topics completed</div>`;
+
+  // today schedule
+  const dayName = DAYS[new Date().getDay()===0?6:new Date().getDay()-1];
+  const slots = genTimetable(dayName);
+  const studySessions = slots.filter(s=>s.type!=='break');
+  let todayHtml = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+    <span style="font-weight:600;font-size:15px;font-family:var(--font-head)">Today – ${dayName}</span>
+    <span class="badge" style="background:var(--surface2);color:var(--accent)">${studySessions.length} sessions</span>
+  </div>`;
+  if (slots.length===0 && db.subjects.length===0) {
+    todayHtml += `<div style="text-align:center;color:var(--muted);font-size:14px;padding:20px 0">Add subjects to generate your timetable</div>`;
+  }
+  slots.slice(0,5).forEach(sl => {
+    const c = sl.type==='break'?'#94a3b8':(sl.subjectId?getSubjectColor(sl.subjectId):'var(--accent)');
+    const bg = sl.type==='break'?'#f1f5f9':sl.type==='revision'?'#fef3c7':'#ede9fe';
+    const fc = sl.type==='break'?'#64748b':sl.type==='revision'?'#d97706':'#7c3aed';
+    const lbl = sl.type==='break'?'Break':sl.type==='revision'?'Revision':fmtTime(sl.duration);
+    todayHtml += `<div class="slot" style="border-left-color:${c}">
+      <div style="flex:1;min-width:0">
+        <div style="font-weight:600;font-size:14px;font-family:var(--font-head);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${sl.label}</div>
+        <div style="font-size:12px;color:var(--muted)">${sl.start} – ${sl.end}</div>
+      </div>
+      <span class="badge" style="background:${bg};color:${fc};white-space:nowrap">${lbl}</span>
+    </div>`;
+  });
+  if (slots.length>5) todayHtml += `<div style="font-size:12px;color:var(--muted);text-align:center;margin-top:6px">+${slots.length-5} more sessions</div>`;
+  document.getElementById('today-card').innerHTML = todayHtml;
+
+  // exams
+  const upExams = db.exams.filter(e=>daysUntil(e.date)>=0).sort((a,b)=>new Date(a.date)-new Date(b.date));
+  const ec = document.getElementById('exams-card');
+  if (upExams.length===0) { ec.style.display='none'; return; }
+  ec.style.display='';
+  let exHtml = `<div style="font-weight:600;font-size:15px;font-family:var(--font-head);margin-bottom:14px">Upcoming Exams</div>`;
+  upExams.slice(0,3).forEach(ex => {
+    const d = daysUntil(ex.date);
+    const bg = d===0?'#fef2f2':d<=3?'#fffbeb':'#f0fdf4';
+    const fc = d===0?'var(--red)':d<=3?'var(--amber)':'var(--green)';
+    const lbl = d===0?'Today!':d===1?'Tomorrow':`${d}d`;
+    exHtml += `<div class="li">
+      <div>
+        <div style="font-weight:600;font-size:14px;font-family:var(--font-head)">${ex.name}</div>
+        <div style="font-size:12px;color:var(--muted)">${ex.subject} · ${new Date(ex.date+'T00:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'})}</div>
+      </div>
+      <span class="countdown" style="background:${bg};color:${fc}">${lbl}</span>
+    </div>`;
+  });
+  ec.innerHTML = exHtml;
+}
+
+function renderStreakCard() {
+  const s = db.streak, today = todayKey();
+  const fc = s.current>=7?'#f59e0b':s.current>=3?'#f97316':s.current>=1?'#ef4444':'#94a3b8';
+  const icon = s.current>=7?'🔥':s.current>=3?'⚡':s.current>=1?'✨':'💤';
+  const bgStyle = s.current>0?`background:linear-gradient(135deg,${fc}20,${fc}08);border:1px solid ${fc}40`:'background:var(--surface);border:1px solid var(--border)';
+  const last7 = Array.from({length:7},(_,i)=>{
+    const d=new Date(); d.setDate(d.getDate()-(6-i));
+    const k=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+    return { k, l:d.toLocaleDateString('en-US',{weekday:'short'}), active:!!(s.history||{})[k] };
+  });
+  const dotRows = last7.map(d=>`<div class="streak-dot">
+    <div class="dot${d.active?' active':''}" style="--streak-color:${fc}">
+      ${d.active?'<svg width="10" height="10" viewBox="0 0 10 10" fill="none"><polyline points="1.5,5 4,7.5 8.5,2" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>':''}
+    </div>
+    <div class="dlbl">${d.l}</div>
+  </div>`).join('');
+  const warn = s.current>0 && s.lastActiveDate!==today
+    ? `<div style="margin-top:10px;font-size:12px;color:var(--amber);text-align:center;font-weight:600">⚠️ Complete a topic today to keep your streak!</div>` : '';
+  const tip = s.current===0
+    ? `<div style="margin-top:10px;font-size:12px;color:var(--muted);text-align:center">Complete a topic today to start your streak 🎯</div>` : '';
+  document.getElementById('streak-card').innerHTML = `
+    <div class="card" style="${bgStyle}">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+        <div style="display:flex;align-items:center;gap:10px">
+          <div style="font-size:28px;line-height:1">${icon}</div>
+          <div>
+            <div style="font-family:var(--font-head);font-size:22px;font-weight:800;color:${fc};line-height:1">${s.current} <span style="font-size:14px;font-weight:500;color:var(--muted)">day${s.current!==1?'s':''}</span></div>
+            <div style="font-size:12px;color:var(--muted);margin-top:2px">Current streak</div>
+          </div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-family:var(--font-head);font-weight:700;font-size:18px">${s.longest||0}</div>
+          <div style="font-size:12px;color:var(--muted)">Best streak</div>
+        </div>
+      </div>
+      <div class="streak-grid">${dotRows}</div>
+      ${warn}${tip}
+    </div>`;
+}
+
+// ─── SUBJECTS ───────────────────────────────────────────
+let expandedSubject = null;
+let confirmDeleteSubject = null;
+let confirmDeleteTopic = null;
+
+function renderSubjects() {
+  const el = document.getElementById('subjects-list');
+  if (db.subjects.length===0) {
+    el.innerHTML = `<div class="card" style="text-align:center;padding:40px 20px;color:var(--muted)">
+      <div style="font-size:40px;margin-bottom:12px">📚</div>
+      <div style="font-weight:600;margin-bottom:6px;font-family:var(--font-head)">No subjects yet</div>
+      <div style="font-size:13px">Add your first subject to get started</div></div>`;
+    return;
+  }
+  el.innerHTML = db.subjects.map(subj => subjCard(subj)).join('');
+}
+
+function subjCard(subj) {
+  const subTopics = db.topics.filter(t=>t.subjectId===subj.id);
+  const done = subTopics.filter(t=>(db.progress[t.id]||'not_started')==='completed').length;
+  const pct = subTopics.length>0?Math.round((done/subTopics.length)*100):0;
+  const color = getSubjectColor(subj.id);
+  const allDone = subTopics.length>0 && done===subTopics.length;
+  const isExp = expandedSubject===subj.id;
+  const isConf = confirmDeleteSubject===subj.id;
+
+  const chkSvg = allDone?'<svg width="12" height="12" viewBox="0 0 12 12" fill="none"><polyline points="2,6 5,9 10,3" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>':'';
+  const chkBg = allDone?color:'transparent';
+  const chkBorder = `border:2px solid ${color}`;
+
+  const confirmHtml = isConf?`<div class="confirm-strip">
+    <span>Delete "${escHtml(subj.name)}" and all its topics?</span>
+    <div class="actions">
+      <button class="btn btn-sm btn-secondary" onclick="cancelConfirmSubj(event)">Cancel</button>
+      <button class="btn btn-sm" style="background:var(--red);color:#fff" onclick="doDeleteSubject('${subj.id}',event)">Delete</button>
+    </div>
+  </div>`:'';
+
+  const topicsHtml = isExp?`<div style="border-top:1px solid var(--border);padding:0 18px 16px">
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:14px 0 10px">
+      <span class="sec" style="margin:0">Topics</span>
+      <button class="btn btn-secondary btn-sm" onclick="openModal('topic','${subj.id}')">+ Topic</button>
+    </div>
+    ${subTopics.length===0?'<div style="font-size:13px;color:var(--muted);text-align:center;padding:12px 0">No topics yet</div>':''}
+    ${subTopics.map(t=>topicRow(t, color)).join('')}
+  </div>`:'';
+
+  return `<div class="card-flush" style="margin-bottom:4px" id="subj-${subj.id}">
+    <div style="padding:16px 18px;cursor:pointer" onclick="toggleExpand('${subj.id}')">
+      <div class="row-flex">
+        <div class="chk" style="background:${chkBg};${chkBorder}" onclick="toggleSubjectDone('${subj.id}',event)">${chkSvg}</div>
+        <div style="flex:1;min-width:0">
+          <div style="font-weight:600;font-size:15px;font-family:var(--font-head)">${escHtml(subj.name)}</div>
+          <div style="font-size:12px;color:var(--muted);margin-top:2px">${fmtTime(subj.duration||60)} study · ${subj.revisionTime>0?fmtTime(subj.revisionTime)+' revision':'No revision'} · ${subTopics.length} topics</div>
+        </div>
+        <div style="display:flex;gap:4px">
+          <button class="ibtn" onclick="openModal('subject',null,'${subj.id}');event.stopPropagation()">✏️</button>
+          <button class="ibtn" style="color:${isConf?'var(--red)':'var(--muted)'}" onclick="toggleConfirmSubj('${subj.id}',event)">🗑️</button>
+        </div>
+      </div>
+      ${confirmHtml}
+      <div style="margin-top:10px">
+        <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-bottom:4px">
+          <span>${done}/${subTopics.length} completed</span><span>${pct}%</span>
+        </div>
+        <div class="pbar"><div class="pfill" style="width:${pct}%;background:${color}"></div></div>
+      </div>
+    </div>
+    ${topicsHtml}
+  </div>`;
+}
+
+function topicRow(t, color) {
+  const isDone = (db.progress[t.id]||'not_started')==='completed';
+  const isConf = confirmDeleteTopic===t.id;
+  const chkSvg = isDone?'<svg width="11" height="11" viewBox="0 0 11 11" fill="none"><polyline points="1.5,5.5 4.5,8.5 9.5,2.5" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>':'';
+  const confirmHtml = isConf?`<div class="confirm-strip" style="margin-bottom:8px">
+    <span>Delete "${escHtml(t.name)}"?</span>
+    <div class="actions">
+      <button class="btn btn-sm btn-secondary" onclick="confirmDeleteTopic=null;renderSubjects()">Cancel</button>
+      <button class="btn btn-sm" style="background:var(--red);color:#fff" onclick="doDeleteTopic('${t.id}')">Delete</button>
+    </div>
+  </div>`:'';
+  return `<div>
+    <div class="row-flex" style="padding:10px 0;border-bottom:1px solid var(--border)">
+      <div class="chk ${isDone?'done':''}" style="${isDone?'':'border-color:var(--border)'}" onclick="toggleTopicDone('${t.id}')">${chkSvg}</div>
+      <div style="flex:1;opacity:${isDone?0.5:1};transition:opacity .2s">
+        <div style="font-weight:500;font-size:14px;${isDone?'text-decoration:line-through':''}">${escHtml(t.name)}</div>
+        <div style="font-size:12px;color:var(--muted)">${(t.days||[]).join(', ')||'All days'}${t.duration?' · '+t.duration+'m':''}</div>
+      </div>
+      <button class="ibtn" onclick="openModal('topic','${t.subjectId}','${t.id}')">✏️</button>
+      <button class="ibtn" style="color:${isConf?'var(--red)':'var(--muted)'}" onclick="toggleConfirmTopic('${t.id}')">🗑️</button>
+    </div>
+    ${confirmHtml}
+  </div>`;
+}
+
+function toggleExpand(id) {
+  expandedSubject = expandedSubject===id?null:id;
+  confirmDeleteSubject = null;
+  renderSubjects();
+}
+function toggleConfirmSubj(id,e) { e.stopPropagation(); confirmDeleteSubject=confirmDeleteSubject===id?null:id; renderSubjects(); }
+function cancelConfirmSubj(e) { e.stopPropagation(); confirmDeleteSubject=null; renderSubjects(); }
+function doDeleteSubject(id,e) {
+  e.stopPropagation();
+  db.subjects = db.subjects.filter(s=>s.id!==id);
+  db.topics = db.topics.filter(t=>t.subjectId!==id);
+  confirmDeleteSubject=null; save(); toast('Subject deleted'); renderSubjects();
+  if (currentPage==='dashboard') renderDashboard();
+}
+function toggleConfirmTopic(id) { confirmDeleteTopic=confirmDeleteTopic===id?null:id; renderSubjects(); }
+function doDeleteTopic(id) {
+  db.topics = db.topics.filter(t=>t.id!==id);
+  confirmDeleteTopic=null; save(); toast('Topic deleted'); renderSubjects();
+  if (currentPage==='dashboard') renderDashboard();
+}
+function toggleTopicDone(id) {
+  const cur = db.progress[id]||'not_started';
+  db.progress[id] = cur==='completed'?'not_started':'completed';
+  if (db.progress[id]==='completed') recordStreak();
+  save(); renderSubjects();
+  if (currentPage==='dashboard') renderDashboard();
+}
+function toggleSubjectDone(id, e) {
+  e.stopPropagation();
+  const subTopics = db.topics.filter(t=>t.subjectId===id);
+  const allDone = subTopics.every(t=>(db.progress[t.id]||'not_started')==='completed');
+  subTopics.forEach(t=>{ db.progress[t.id]=allDone?'not_started':'completed'; });
+  if (!allDone) recordStreak();
+  save(); renderSubjects();
+  if (currentPage==='dashboard') renderDashboard();
+}
+
+// ─── TIMETABLE ──────────────────────────────────────────
+let selectedDay = DAYS[new Date().getDay()===0?6:new Date().getDay()-1];
+function renderTimetable() {
+  const tabs = document.getElementById('day-tabs');
+  tabs.innerHTML = DAYS.map(d=>`<button class="day-tab${d===selectedDay?' active':''}" onclick="selectDay('${d}')">${d.slice(0,3)}</button>`).join('');
+  const slots = genTimetable(selectedDay);
+  const el = document.getElementById('timetable-slots');
+  if (db.subjects.length===0) {
+    el.innerHTML=`<div class="card" style="text-align:center;padding:40px 20px;color:var(--muted)">
+      <div style="font-size:40px;margin-bottom:12px">📅</div>
+      <div style="font-weight:600;font-family:var(--font-head);margin-bottom:6px">No schedule yet</div>
+      <div style="font-size:13px">Add subjects to auto-generate your timetable</div></div>`;
+    return;
+  }
+  if (slots.length===0) {
+    el.innerHTML=`<div class="card" style="text-align:center;padding:30px 20px;color:var(--muted);font-size:13px">No sessions fit in today's window. Adjust your study hours in Settings.</div>`;
+    return;
+  }
+  el.innerHTML = slots.map(sl=>{
+    const c = sl.type==='break'?'#94a3b8':(sl.subjectId?getSubjectColor(sl.subjectId):'var(--accent)');
+    const typeLbl = sl.type==='break'?'Rest':sl.type==='revision'?'Revision':'Study';
+    return `<div class="tl-row">
+      <div class="tl-time"><div class="t1">${sl.start}</div><div class="t2">${sl.end}</div></div>
+      <div class="tl-block" style="border-left-color:${c};border:1px solid ${c}30;border-left:4px solid ${c}">
+        <div class="name" style="color:${sl.type==='break'?'var(--muted)':'var(--text)'}">${sl.label}</div>
+        <div class="meta">${fmtTime(sl.duration)} · ${typeLbl}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+function selectDay(d) { selectedDay=d; renderTimetable(); }
+
+// ─── EXAMS ──────────────────────────────────────────────
+let confirmDeleteExam = null;
+function renderExams() {
+  const el = document.getElementById('exams-list');
+  const sorted = [...db.exams].sort((a,b)=>new Date(a.date)-new Date(b.date));
+  if (sorted.length===0) {
+    el.innerHTML=`<div class="card" style="text-align:center;padding:40px 20px;color:var(--muted)">
+      <div style="font-size:40px;margin-bottom:12px">🎯</div>
+      <div style="font-weight:600;font-family:var(--font-head);margin-bottom:6px">No exams scheduled</div>
+      <div style="font-size:13px">Add your upcoming exams to track countdowns</div></div>`;
+    return;
+  }
+  el.innerHTML = sorted.map(ex=>{
+    const d=daysUntil(ex.date), passed=d<0;
+    const bg=passed?'#f1f5f9':d===0?'#fef2f2':d<=3?'#fffbeb':'#ede9fe';
+    const fc=passed?'#94a3b8':d===0?'var(--red)':d<=3?'var(--amber)':'var(--accent)';
+    const icon=passed?'✓':d===0?'!':d<=1?d:d;
+    const sub=passed?'done':d===0?'today':d===1?'day':'days';
+    const isConf=confirmDeleteExam===ex.id;
+    const confirmHtml=isConf?`<div class="confirm-strip">
+      <span>Delete this exam?</span>
+      <div class="actions">
+        <button class="btn btn-sm btn-secondary" onclick="confirmDeleteExam=null;renderExams()">Cancel</button>
+        <button class="btn btn-sm" style="background:var(--red);color:#fff" onclick="doDeleteExam('${ex.id}')">Delete</button>
+      </div>
+    </div>`:'';
+    return `<div class="card" style="margin-bottom:4px;opacity:${passed?.55:1}">
+      <div style="display:flex;align-items:flex-start;gap:14px">
+        <div style="width:50px;height:50px;border-radius:12px;background:${bg};display:flex;flex-direction:column;align-items:center;justify-content:center;flex-shrink:0">
+          <div style="font-family:var(--font-head);font-size:18px;font-weight:800;color:${fc}">${icon}</div>
+          <div style="font-size:10px;color:var(--muted)">${sub}</div>
+        </div>
+        <div style="flex:1">
+          <div style="font-weight:600;font-size:15px;font-family:var(--font-head)">${escHtml(ex.name)}</div>
+          <div style="font-size:13px;color:var(--muted);margin-top:3px">${escHtml(ex.subject||'')}</div>
+          <div style="font-size:12px;color:var(--muted);margin-top:4px">${new Date(ex.date+'T00:00:00').toLocaleDateString('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric'})}${ex.time?' · '+ex.time:''}</div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:4px">
+          <button class="ibtn" onclick="openModal('exam',null,'${ex.id}')">✏️</button>
+          <button class="ibtn" style="color:${isConf?'var(--red)':'var(--muted)'}" onclick="toggleConfirmExam('${ex.id}')">🗑️</button>
+        </div>
+      </div>
+      ${confirmHtml}
+    </div>`;
+  }).join('');
+}
+function toggleConfirmExam(id) { confirmDeleteExam=confirmDeleteExam===id?null:id; renderExams(); }
+function doDeleteExam(id) { db.exams=db.exams.filter(e=>e.id!==id); confirmDeleteExam=null; save(); toast('Exam deleted'); renderExams(); if(currentPage==='dashboard') renderDashboard(); }
+
+// ─── PROGRESS ───────────────────────────────────────────
+function renderProgress() {
+  const el = document.getElementById('progress-list');
+  if (db.subjects.length===0) {
+    el.innerHTML=`<div class="card" style="text-align:center;padding:40px 20px;color:var(--muted)">
+      <div style="font-size:40px;margin-bottom:12px">📊</div>
+      <div style="font-weight:600;font-family:var(--font-head);margin-bottom:6px">Nothing to track yet</div>
+      <div style="font-size:13px">Add subjects and topics to track your progress</div></div>`;
+    return;
+  }
+  el.innerHTML = db.subjects.map(subj=>{
+    const subTopics = db.topics.filter(t=>t.subjectId===subj.id);
+    if (!subTopics.length) return '';
+    const color = getSubjectColor(subj.id);
+    const done = subTopics.filter(t=>(db.progress[t.id]||'not_started')==='completed').length;
+    const pct = Math.round((done/subTopics.length)*100);
+    return `<div class="card" style="margin-bottom:4px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <div style="display:flex;align-items:center;gap:8px">
+          <div class="sdot" style="background:${color}"></div>
+          <span style="font-weight:600;font-size:15px;font-family:var(--font-head)">${escHtml(subj.name)}</span>
+        </div>
+        <span style="font-weight:700;font-size:14px;color:${color}">${pct}%</span>
+      </div>
+      <div class="pbar" style="margin-bottom:14px"><div class="pfill" style="width:${pct}%;background:${color}"></div></div>
+      ${subTopics.map(t=>{
+        const s = db.progress[t.id]||'not_started';
+        return `<div class="row-flex" style="padding:8px 0;border-bottom:1px solid var(--border)">
+          <div style="width:10px;height:10px;border-radius:50%;background:${s==='completed'?'var(--green)':s==='in_progress'?'var(--amber)':'var(--muted)'};flex-shrink:0"></div>
+          <div style="flex:1;font-size:14px;font-weight:500">${escHtml(t.name)}</div>
+          <select class="status-sel" onchange="setTopicStatus('${t.id}',this.value)">
+            ${['not_started','in_progress','completed'].map(k=>`<option value="${k}"${s===k?' selected':''}>${STATUS_LABELS[k]}</option>`).join('')}
+          </select>
+        </div>`;
+      }).join('')}
+    </div>`;
+  }).join('');
+}
+function setTopicStatus(id, status) {
+  db.progress[id] = status;
+  if (status==='completed') recordStreak();
+  save();
+  if (currentPage==='dashboard') renderDashboard();
+  if (currentPage==='subjects') renderSubjects();
+}
+
+// ─── MODAL ──────────────────────────────────────────────
+let modalState = {};
+function openModal(type, subjectId, editId) {
+  modalState = { type, subjectId: subjectId||null, editId: editId||null };
+  const sheet = document.getElementById('modal-sheet');
+  if (type==='subject') sheet.innerHTML = subjectModalHTML(editId);
+  else if (type==='topic') sheet.innerHTML = topicModalHTML(subjectId, editId);
+  else if (type==='exam') sheet.innerHTML = examModalHTML(editId);
+  document.getElementById('modal-overlay').classList.remove('hidden');
+}
+function closeModal() { document.getElementById('modal-overlay').classList.add('hidden'); }
+function closeModalIfOutside(e) { if (e.target===document.getElementById('modal-overlay')) closeModal(); }
+
+function subjectModalHTML(editId) {
+  const s = editId?db.subjects.find(x=>x.id===editId):null;
+  return `<div class="modal-title">${s?'Edit Subject':'Add Subject'}</div>
+    <label>Subject Name</label>
+    <input id="m-name" value="${s?escHtml(s.name):''}" placeholder="e.g. Mathematics" autofocus/>
+    <label>Daily Study Duration (minutes)</label>
+    <input id="m-dur" type="number" value="${s?s.duration:60}" min="10" max="300"/>
+    <label>Daily Revision Time (minutes, 0 to skip)</label>
+    <input id="m-rev" type="number" value="${s?s.revisionTime:0}" min="0" max="120"/>
+    <div style="display:flex;gap:10px;margin-top:20px">
+      <button class="btn btn-secondary" style="flex:1" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" style="flex:1" onclick="saveSubject('${editId||''}')">${s?'Save Changes':'Add Subject'}</button>
+    </div>`;
+}
+function saveSubject(editId) {
+  const name = document.getElementById('m-name').value.trim();
+  const dur = Number(document.getElementById('m-dur').value);
+  const rev = Number(document.getElementById('m-rev').value);
+  if (!name) { toast('Subject name required','err'); return; }
+  if (editId) {
+    db.subjects = db.subjects.map(s=>s.id===editId?{...s,name,duration:dur,revisionTime:rev}:s);
+    toast('Subject updated');
+  } else {
+    db.subjects.push({ id:uid(), name, duration:dur, revisionTime:rev });
+    toast('Subject added');
+  }
+  save(); closeModal();
+  renderSubjects();
+  if (currentPage==='dashboard') renderDashboard();
+}
+
+function topicModalHTML(subjectId, editId) {
+  const t = editId?db.topics.find(x=>x.id===editId):null;
+  const selSubjId = t?t.subjectId:(subjectId||db.subjects[0]?.id||'');
+  const selSubj = db.subjects.find(s=>s.id===selSubjId);
+  const subjOpts = db.subjects.map(s=>`<option value="${s.id}"${s.id===selSubjId?' selected':''}>${escHtml(s.name)}</option>`).join('');
+  const dayChips = DAYS.map(d=>{
+    const on = t&&t.days&&t.days.includes(d);
+    return `<span class="chip${on?' on':''}" onclick="toggleChip(this,'${d}')">${d.slice(0,3)}</span>`;
+  }).join('');
+  const noSubjMsg = db.subjects.length===0?`<div style="font-size:13px;color:var(--red);padding:10px 0">No subjects yet — add a subject first.</div>`:'';
+  return `<div class="modal-title">${t?'Edit Topic':'Add Topic'}</div>
+    <label>Subject</label>
+    ${noSubjMsg}
+    ${db.subjects.length>0?`<select id="m-subj" onchange="updateDurPlaceholder()">${subjOpts}</select>`:''}
+    <label>Topic Name</label>
+    <input id="m-tname" value="${t?escHtml(t.name):''}" placeholder="e.g. Quadratic Equations"/>
+    <label>Time Limit (minutes)</label>
+    <input id="m-tdur" type="number" value="${t&&t.duration?t.duration:''}" min="5" max="300" placeholder="${selSubj?'Default: '+(selSubj.duration||60)+' min (from subject)':'e.g. 45'}" oninput="updateDurHint()"/>
+    <div id="dur-hint" style="font-size:11px;color:var(--muted);margin-top:4px">${t&&t.duration?`This topic will be scheduled for ${t.duration} min`:`Leave blank to use subject duration (${selSubj?.duration||60} min)`}</div>
+    <label>Assign to Days (empty = all days)</label>
+    <div class="chips" id="day-chips">${dayChips}</div>
+    <div style="display:flex;gap:10px;margin-top:20px">
+      <button class="btn btn-secondary" style="flex:1" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" style="flex:1" onclick="saveTopic('${editId||''}')" ${db.subjects.length===0?'disabled':''}>${t?'Save Changes':'Add Topic'}</button>
+    </div>`;
+}
+function toggleChip(el, day) { el.classList.toggle('on'); }
+function updateDurHint() {
+  const v = document.getElementById('m-tdur').value;
+  const subjId = document.getElementById('m-subj')?.value;
+  const subj = db.subjects.find(s=>s.id===subjId);
+  document.getElementById('dur-hint').textContent = v
+    ? `This topic will be scheduled for ${v} min in the timetable`
+    : `Leave blank to use subject duration (${subj?.duration||60} min)`;
+  document.getElementById('dur-hint').style.color = v?'var(--accent)':'var(--muted)';
+}
+function updateDurPlaceholder() {
+  const subjId = document.getElementById('m-subj')?.value;
+  const subj = db.subjects.find(s=>s.id===subjId);
+  document.getElementById('m-tdur').placeholder = subj?'Default: '+(subj.duration||60)+' min (from subject)':'e.g. 45';
+  updateDurHint();
+}
+function saveTopic(editId) {
+  const name = document.getElementById('m-tname').value.trim();
+  const subjId = document.getElementById('m-subj')?.value;
+  const durVal = document.getElementById('m-tdur').value;
+  const dur = durVal===''?null:Number(durVal);
+  if (!name) { toast('Topic name required','err'); return; }
+  if (!subjId) { toast('Select a subject','err'); return; }
+  if (dur!==null && (isNaN(dur)||dur<5)) { toast('Time limit must be at least 5 min','err'); return; }
+  const days = [...document.querySelectorAll('#day-chips .chip.on')].map(c=>DAYS.find(d=>d.slice(0,3)===c.textContent));
+  if (editId) {
+    db.topics = db.topics.map(t=>t.id===editId?{...t,name,subjectId:subjId,duration:dur,days}:t);
+    toast('Topic updated');
+  } else {
+    db.topics.push({ id:uid(), name, subjectId:subjId, duration:dur, days });
+    toast('Topic added');
+  }
+  save(); closeModal();
+  renderSubjects();
+  if (currentPage==='dashboard') renderDashboard();
+}
+
+function examModalHTML(editId) {
+  const ex = editId?db.exams.find(x=>x.id===editId):null;
+  const today = new Date().toISOString().split('T')[0];
+  const subjOpts = db.subjects.length>0
+    ? `<select id="m-esubj"><option value="">Select subject</option>${db.subjects.map(s=>`<option value="${escHtml(s.name)}"${ex&&ex.subject===s.name?' selected':''}>${escHtml(s.name)}</option>`).join('')}<option value="Other">Other</option></select>`
+    : `<input id="m-esubj" value="${ex?escHtml(ex.subject||''):''}" placeholder="e.g. Mathematics"/>`;
+  return `<div class="modal-title">${ex?'Edit Exam':'Add Exam'}</div>
+    <label>Exam Name</label>
+    <input id="m-ename" value="${ex?escHtml(ex.name):''}" placeholder="e.g. Mathematics Final"/>
+    <label>Subject</label>
+    ${subjOpts}
+    <label>Exam Date</label>
+    <input id="m-edate" type="date" value="${ex?ex.date:''}" min="${today}"/>
+    <label>Exam Time (optional)</label>
+    <input id="m-etime" type="time" value="${ex?ex.time||'':''}"/>
+    <div style="display:flex;gap:10px;margin-top:20px">
+      <button class="btn btn-secondary" style="flex:1" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" style="flex:1" onclick="saveExam('${editId||''}')">${ex?'Save Changes':'Add Exam'}</button>
+    </div>`;
+}
+function saveExam(editId) {
+  const name = document.getElementById('m-ename').value.trim();
+  const subject = document.getElementById('m-esubj').value.trim();
+  const date = document.getElementById('m-edate').value;
+  const time = document.getElementById('m-etime').value;
+  if (!name) { toast('Exam name required','err'); return; }
+  if (!date) { toast('Exam date required','err'); return; }
+  if (editId) {
+    db.exams = db.exams.map(e=>e.id===editId?{...e,name,subject,date,time}:e);
+    toast('Exam updated');
+  } else {
+    db.exams.push({ id:uid(), name, subject, date, time });
+    toast('Exam added');
+  }
+  save(); closeModal(); renderExams();
+  if (currentPage==='dashboard') renderDashboard();
+}
+
+// ─── UTILS ──────────────────────────────────────────────
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ─── INIT ───────────────────────────────────────────────
+load();
+checkStreak();
+setTheme(db.settings.theme||'light');
+document.getElementById('today-lbl').textContent = new Date().toLocaleDateString('en-US',{weekday:'long',month:'short',day:'numeric'});
+renderDashboard();
+</script>
+</body>
+</html>
